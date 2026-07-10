@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: keel_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: false
+      APP_URL: http://localhost
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: keel_ci
+      DB_DATABASE_TEST: keel_ci_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_CHARSET: utf8mb4
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, mbstring, zip
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Wait for MySQL
+        run: |
+          php -r '
+          $retries = 30;
+          while ($retries-- > 0) {
+              try {
+                  new PDO("mysql:host=127.0.0.1;port=3306;dbname=keel_ci;charset=utf8mb4", "root", "root");
+                  exit(0);
+              } catch (Throwable $e) {
+                  sleep(2);
+              }
+          }
+          fwrite(STDERR, "MySQL did not become ready in time.\n");
+          exit(1);
+          '
+
+      - name: Ensure feature test database exists
+        run: |
+          php -r '
+          $pdo = new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4", "root", "root", [
+              PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+          ]);
+          $pdo->exec("CREATE DATABASE IF NOT EXISTS keel_ci_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+          '
+
+      - name: Run SQL migrations
+        run: php database/migrate.php
+
+      - name: Build frontend assets
+        run: |
+          npm install
+          npm run build
+
+      - name: Run Unit tests
+        run: ./vendor/bin/phpunit --testsuite Unit
+
+      - name: Run Feature tests
+        run: ./vendor/bin/phpunit --testsuite Feature

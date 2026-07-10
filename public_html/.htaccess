@@ -1,0 +1,13 @@
+# Route every request that isn't a real file/directory through the front controller.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Block direct access to dotfiles served from this folder (e.g. .env if ever copied here by mistake).
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

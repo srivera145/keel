@@ -1,0 +1,16 @@
+/vendor
+/node_modules
+/public_html/assets/*
+!/public_html/assets/brand/
+/public_html/assets/brand/*
+!/public_html/assets/brand/*.png
+/public_html/hot
+public_html/uploads/*
+!public_html/uploads/.gitkeep
+.env
+storage/app/*
+!storage/app/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+.phpunit.cache/
+.DS_Store

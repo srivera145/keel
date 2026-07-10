@@ -1,0 +1,255 @@
+@import "./components.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens
+ * Re-theme a cloned project by changing values here.
+ */
+:root {
+  --color-brand: #ff6b3d;
+  --color-brand-hover: #ff835f;
+  --color-brand-contrast: #08101e;
+
+  --color-surface: #1f2937;
+  --color-surface-hover: #374151;
+  --color-surface-muted: #111827;
+
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-text-strong: #ffffff;
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-soft: rgba(220, 38, 38, 0.18);
+  --color-danger-border: rgba(248, 113, 113, 0.48);
+  --color-danger-text: #fecaca;
+
+  --color-success: #16a34a;
+  --color-success-soft: rgba(22, 163, 74, 0.18);
+  --color-success-border: rgba(74, 222, 128, 0.4);
+  --color-success-text: #bbf7d0;
+
+  --color-card-bg: #0b1220;
+  --color-card-border: #334155;
+  --color-input-border: #475569;
+
+  --color-table-head: #121c2f;
+  --color-table-row-alt: var(--color-surface-muted);
+  --color-table-row-hover: var(--color-surface-hover);
+
+  --color-empty-state-bg: rgba(15, 23, 42, 0.74);
+  --color-empty-state-border: #334155;
+  --color-empty-state-icon-bg: #1f2937;
+  --color-empty-state-icon-text: #cbd5e1;
+
+  --color-modal-backdrop: rgba(2, 6, 23, 0.72);
+
+  --shadow-brand-cta: 0 10px 30px rgba(255, 107, 61, 0.34);
+
+  --color-back-to-top-border: rgba(105, 230, 216, 0.45);
+  --color-back-to-top-border-hover: var(--color-brand);
+  --color-back-to-top-bg-top: rgba(11, 24, 48, 0.96);
+  --color-back-to-top-bg-bottom: rgba(7, 17, 31, 0.96);
+  --color-back-to-top-glow: rgba(105, 230, 216, 0.2);
+  --color-back-to-top-chevron: var(--color-brand);
+  --color-back-to-top-text: #f8fafc;
+  --color-back-to-top-stem: #f8fafc;
+  --color-back-to-top-focus: #69e6d8;
+
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+[data-theme="light"] {
+  --color-brand: #ff6b3d;
+  --color-brand-hover: #ff835f;
+  --color-brand-contrast: #08101e;
+
+  --color-surface: #1f2937;
+  --color-surface-hover: #111827;
+  --color-surface-muted: #f3f4f6;
+
+  --color-text: #f8fafc;
+  --color-text-muted: #4b5563;
+  --color-text-strong: #111827;
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-danger-text: #991b1b;
+
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-success-text: #166534;
+
+  --color-card-bg: #ffffff;
+  --color-card-border: #d1d5db;
+  --color-input-border: #cbd5e1;
+
+  --color-table-head: #f3f4f6;
+  --color-table-row-alt: #f3f4f6;
+  --color-table-row-hover: #e5e7eb;
+
+  --color-empty-state-bg: rgba(243, 244, 246, 0.9);
+  --color-empty-state-border: #cbd5e1;
+  --color-empty-state-icon-bg: #e5e7eb;
+  --color-empty-state-icon-text: #1f2937;
+
+  --color-modal-backdrop: rgba(15, 23, 42, 0.45);
+
+  --color-back-to-top-border: rgba(15, 23, 42, 0.24);
+  --color-back-to-top-border-hover: var(--color-brand);
+  --color-back-to-top-bg-top: #ffffff;
+  --color-back-to-top-bg-bottom: #f8fafc;
+  --color-back-to-top-glow: rgba(255, 107, 61, 0.18);
+  --color-back-to-top-chevron: var(--color-brand);
+  --color-back-to-top-text: #0f172a;
+  --color-back-to-top-stem: #0f172a;
+  --color-back-to-top-focus: #2563eb;
+}
+
+@layer components {
+  .logo-light-mode {
+    display: none;
+  }
+
+  .logo-dark-mode {
+    display: inline-block;
+  }
+
+  [data-theme="dark"] .logo-light-mode {
+    display: none;
+  }
+
+  [data-theme="dark"] .logo-dark-mode {
+    display: inline-block;
+  }
+
+  [data-theme="light"] .logo-light-mode {
+    display: inline-block;
+  }
+
+  [data-theme="light"] .logo-dark-mode {
+    display: none;
+  }
+
+  .theme-toggle-button {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid var(--color-card-border);
+    background-color: var(--color-card-bg);
+    color: var(--color-text-strong);
+    transition:
+      border-color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .theme-toggle-button:hover {
+    border-color: var(--color-brand);
+    transform: translateY(-1px);
+  }
+
+  .theme-toggle-button:focus-visible {
+    outline: 2px solid var(--color-back-to-top-focus);
+    outline-offset: 2px;
+  }
+
+  .theme-toggle-button [data-theme-toggle-icon] {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .theme-toggle-fallback {
+    position: fixed;
+    top: 0.9rem;
+    right: 0.9rem;
+    z-index: 95;
+  }
+
+  .keel-back-to-top {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 70;
+    display: inline-flex;
+    height: 2.75rem;
+    width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid var(--color-back-to-top-border);
+    background:
+      radial-gradient(
+        circle at 30% 25%,
+        var(--color-back-to-top-glow),
+        transparent 56%
+      ),
+      linear-gradient(
+        180deg,
+        var(--color-back-to-top-bg-top),
+        var(--color-back-to-top-bg-bottom)
+      );
+    color: var(--color-back-to-top-text);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .keel-back-to-top:hover {
+    border-color: var(--color-back-to-top-border-hover);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.36);
+  }
+
+  .keel-back-to-top svg {
+    height: 1.2rem;
+    width: 1.2rem;
+    display: block;
+  }
+
+  .keel-back-to-top .keel-chevron {
+    fill: none;
+    stroke: var(--color-back-to-top-chevron);
+    stroke-width: 2.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .keel-back-to-top .keel-stem {
+    fill: none;
+    stroke: var(--color-back-to-top-stem);
+    stroke-width: 2.25;
+    stroke-linecap: round;
+  }
+
+  .keel-back-to-top:focus-visible {
+    outline: 2px solid var(--color-back-to-top-focus);
+    outline-offset: 2px;
+  }
+
+  .keel-back-to-top.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .keel-back-to-top {
+      transition: none;
+    }
+  }
+}
