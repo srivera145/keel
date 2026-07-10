@@ -6,13 +6,24 @@ use Keel\Core\ErrorHandler;
 
 class Router
 {
+    private static ?self $current = null;
     private array $routes = [];
     private array $groupMiddleware = [];
     private string $groupPrefix = '';
 
-    public function get(string $uri, callable|array $action): void
+    public function __construct()
     {
-        $this->addRoute('GET', $uri, $action);
+        self::$current = $this;
+    }
+
+    public static function current(): ?self
+    {
+        return self::$current;
+    }
+
+    public function get(string $uri, callable|array $action, array $options = []): void
+    {
+        $this->addRoute('GET', $uri, $action, $options);
     }
 
     public function post(string $uri, callable|array $action): void
@@ -44,7 +55,7 @@ class Router
         $this->groupMiddleware = $previousMiddleware;
     }
 
-    private function addRoute(string $method, string $uri, callable|array $action): void
+    private function addRoute(string $method, string $uri, callable|array $action, array $options = []): void
     {
         $uri = $this->groupPrefix . $uri;
         $pattern = preg_replace('/\{([a-zA-Z_]+)\}/', '(?P<$1>[^/]+)', $uri);
@@ -52,10 +63,36 @@ class Router
 
         $this->routes[] = [
             'method' => $method,
+            'uri' => $uri,
             'pattern' => $pattern,
             'action' => $action,
             'middleware' => $this->groupMiddleware,
+            'sitemap' => (bool) ($options['sitemap'] ?? false),
+            'options' => $options,
         ];
+    }
+
+    public function publicPages(): array
+    {
+        $pages = [];
+
+        foreach ($this->routes as $route) {
+            if ($route['method'] !== 'GET' || (bool) ($route['sitemap'] ?? false) !== true) {
+                continue;
+            }
+
+            $pages[] = [
+                'uri' => (string) $route['uri'],
+                'options' => (array) ($route['options'] ?? []),
+            ];
+        }
+
+        return $pages;
+    }
+
+    public function registeredRoutes(): array
+    {
+        return $this->routes;
     }
 
     public function dispatch(Request $request): mixed

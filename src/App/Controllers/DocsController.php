@@ -8,6 +8,67 @@ use Keel\Core\Request;
 
 class DocsController extends Controller
 {
+    public static function docsPages(): array
+    {
+        return [
+            ['slug' => 'installation', 'title' => 'Installation', 'contentFile' => 'installation', 'group' => 'Getting Started'],
+            ['slug' => 'project-structure', 'title' => 'Project Structure', 'contentFile' => 'project-structure', 'group' => 'Getting Started'],
+            ['slug' => 'where-to-start-editing', 'title' => 'Where To Start Editing', 'contentFile' => 'where-to-start-editing', 'group' => 'Getting Started'],
+            ['slug' => 'authentication', 'title' => 'Authentication', 'contentFile' => 'authentication', 'group' => 'Features'],
+            ['slug' => 'mailing', 'title' => 'Mailing', 'contentFile' => 'mailing', 'group' => 'Features'],
+            ['slug' => 'security', 'title' => 'Security', 'contentFile' => 'security', 'group' => 'Features'],
+            ['slug' => 'billing', 'title' => 'Billing', 'contentFile' => 'billing', 'group' => 'Features'],
+            ['slug' => 'multi-tenancy', 'title' => 'Multi-Tenancy', 'contentFile' => 'multi-tenancy', 'group' => 'Features'],
+            ['slug' => 'background-jobs', 'title' => 'Background Jobs', 'contentFile' => 'background-jobs', 'group' => 'Features'],
+            ['slug' => 'theming', 'title' => 'Theming', 'contentFile' => 'theming', 'group' => 'Features'],
+            ['slug' => 'api-tokens', 'title' => 'API Tokens', 'contentFile' => 'api-tokens', 'group' => 'Features'],
+            ['slug' => 'seo-discoverability', 'title' => 'SEO & Discoverability', 'contentFile' => 'seo-discoverability', 'group' => 'Features'],
+        ];
+    }
+
+    public static function docsPagesBySlug(): array
+    {
+        $pagesBySlug = [];
+
+        foreach (self::docsPages() as $page) {
+            $slug = (string) ($page['slug'] ?? '');
+            if ($slug === '') {
+                continue;
+            }
+
+            $pagesBySlug[$slug] = $page;
+        }
+
+        return $pagesBySlug;
+    }
+
+    public static function docsNavGroups(bool $includeOverview = true): array
+    {
+        $groups = [];
+
+        foreach (self::docsPages() as $page) {
+            $groupName = (string) ($page['group'] ?? 'Docs');
+
+            if (!isset($groups[$groupName])) {
+                $groups[$groupName] = [
+                    'title' => $groupName,
+                    'links' => [],
+                ];
+            }
+
+            $groups[$groupName]['links'][] = [
+                'href' => '/docs/' . (string) $page['slug'],
+                'label' => (string) $page['title'],
+            ];
+        }
+
+        if ($includeOverview && isset($groups['Getting Started'])) {
+            array_unshift($groups['Getting Started']['links'], ['href' => '/docs', 'label' => 'Overview']);
+        }
+
+        return array_values($groups);
+    }
+
     public function index(Request $request): void
     {
         $this->view('docs._layout', [
@@ -15,7 +76,8 @@ class DocsController extends Controller
             'pageTitle' => 'Documentation',
             'contentFile' => 'index',
             'currentPath' => '/docs',
-            'navGroups' => $this->navGroups(),
+            'navGroups' => self::docsNavGroups(),
+            'docsGroups' => self::docsNavGroups(false),
             'repoHref' => $this->repoHref(),
             'hasSeedScript' => $this->hasSeedScript(),
             'hasDockerCompose' => $this->hasDockerCompose(),
@@ -24,7 +86,7 @@ class DocsController extends Controller
 
     public function show(Request $request, string $slug): void
     {
-        $pages = $this->pages();
+        $pages = self::docsPagesBySlug();
 
         if (!isset($pages[$slug])) {
             ErrorHandler::render(404);
@@ -37,56 +99,11 @@ class DocsController extends Controller
             'pageTitle' => $page['title'],
             'contentFile' => $page['contentFile'],
             'currentPath' => '/docs/' . $slug,
-            'navGroups' => $this->navGroups(),
+            'navGroups' => self::docsNavGroups(),
             'repoHref' => $this->repoHref(),
             'hasSeedScript' => $this->hasSeedScript(),
             'hasDockerCompose' => $this->hasDockerCompose(),
         ]);
-    }
-
-    private function pages(): array
-    {
-        return [
-            'installation' => ['title' => 'Installation', 'contentFile' => 'installation'],
-            'project-structure' => ['title' => 'Project Structure', 'contentFile' => 'project-structure'],
-            'where-to-start-editing' => ['title' => 'Where To Start Editing', 'contentFile' => 'where-to-start-editing'],
-            'authentication' => ['title' => 'Authentication', 'contentFile' => 'authentication'],
-            'mailing' => ['title' => 'Mailing', 'contentFile' => 'mailing'],
-            'security' => ['title' => 'Security', 'contentFile' => 'security'],
-            'billing' => ['title' => 'Billing', 'contentFile' => 'billing'],
-            'multi-tenancy' => ['title' => 'Multi-Tenancy', 'contentFile' => 'multi-tenancy'],
-            'background-jobs' => ['title' => 'Background Jobs', 'contentFile' => 'background-jobs'],
-            'theming' => ['title' => 'Theming', 'contentFile' => 'theming'],
-            'api-tokens' => ['title' => 'API Tokens', 'contentFile' => 'api-tokens'],
-        ];
-    }
-
-    private function navGroups(): array
-    {
-        return [
-            [
-                'title' => 'Getting Started',
-                'links' => [
-                    ['href' => '/docs', 'label' => 'Overview'],
-                    ['href' => '/docs/installation', 'label' => 'Installation'],
-                    ['href' => '/docs/project-structure', 'label' => 'Project Structure'],
-                    ['href' => '/docs/where-to-start-editing', 'label' => 'Where To Start Editing'],
-                ],
-            ],
-            [
-                'title' => 'Features',
-                'links' => [
-                    ['href' => '/docs/authentication', 'label' => 'Authentication'],
-                    ['href' => '/docs/mailing', 'label' => 'Mailing'],
-                    ['href' => '/docs/security', 'label' => 'Security'],
-                    ['href' => '/docs/billing', 'label' => 'Billing'],
-                    ['href' => '/docs/multi-tenancy', 'label' => 'Multi-Tenancy'],
-                    ['href' => '/docs/background-jobs', 'label' => 'Background Jobs'],
-                    ['href' => '/docs/theming', 'label' => 'Theming'],
-                    ['href' => '/docs/api-tokens', 'label' => 'API Tokens'],
-                ],
-            ],
-        ];
     }
 
     private function repoHref(): string

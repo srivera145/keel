@@ -9,8 +9,11 @@ use Keel\App\Controllers\DashboardController;
 use Keel\App\Controllers\DocsController;
 use Keel\App\Controllers\FileController;
 use Keel\App\Controllers\HealthController;
+use Keel\App\Controllers\LlmsTxtController;
 use Keel\App\Controllers\ManifestController;
 use Keel\App\Controllers\OrganizationController;
+use Keel\App\Controllers\RobotsController;
+use Keel\App\Controllers\SitemapController;
 use Keel\App\Controllers\SuperAdminController;
 use Keel\App\Controllers\ThemeController;
 use Keel\App\Controllers\StripeWebhookController;
@@ -30,14 +33,17 @@ $multiTenancyEnabled = (bool) Env::get('MULTI_TENANCY_ENABLED', false);
 
 $router->get('/up', [HealthController::class, 'index']);
 $router->get('/manifest.webmanifest', [ManifestController::class, 'index']);
+$router->get('/sitemap.xml', [SitemapController::class, 'index']);
+$router->get('/robots.txt', [RobotsController::class, 'index']);
+$router->get('/llms.txt', [LlmsTxtController::class, 'index']);
 
 $router->group(['middleware' => [CsrfMiddleware::class]], function ($router) use ($multiTenancyEnabled) {
-    $router->get('/', [WelcomeController::class, 'index']);
-    $router->get('/docs', [DocsController::class, 'index']);
+    $router->get('/', [WelcomeController::class, 'index'], ['sitemap' => true]);
+    $router->get('/docs', [DocsController::class, 'index'], ['sitemap' => true]);
     $router->get('/docs/{slug}', [DocsController::class, 'show']);
 
     $router->group(['middleware' => [ThrottleMiddleware::class]], function ($router) {
-        $router->get('/login', [AuthController::class, 'showLogin']);
+        $router->get('/login', [AuthController::class, 'showLogin'], ['sitemap' => true]);
         $router->post('/auth/otp/request', [AuthController::class, 'requestOtp']);
         $router->post('/auth/otp/verify', [AuthController::class, 'verifyOtp']);
         $router->post('/auth/magic/request', [AuthController::class, 'requestMagicLink']);

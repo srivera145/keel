@@ -6,6 +6,63 @@ $repoUrl = trim((string) Env::get('APP_REPO_URL', ''));
 $repoHref = $repoUrl !== '' ? $repoUrl : 'https://github.com';
 $repoLabel = $repoUrl !== '' ? 'GitHub' : 'GitHub (set APP_REPO_URL before publishing)';
 $hasLicense = file_exists(dirname(__DIR__) . '/LICENSE');
+$metaDescription = 'Keel is an open-source PHP 8.2 starter kit for SaaS apps with passwordless auth, Stripe billing, multi-tenancy, and docs.';
+
+$softwareSchema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'SoftwareSourceCode',
+    'name' => 'Keel',
+    'description' => 'Open-source PHP 8.2 starter kit for building SaaS applications with passwordless auth, Stripe billing, multi-tenancy, and docs.',
+    'disambiguatingDescription' => 'An open-source PHP 8.2 starter kit for building SaaS applications. Not affiliated with the Kubernetes deployment automation tool named Keel or the London operations platform startup also named Keel.',
+    'programmingLanguage' => 'PHP',
+    'license' => 'https://opensource.org/licenses/MIT',
+    'author' => [
+        '@type' => 'Person',
+        'name' => 'Santos Rivera',
+    ],
+];
+
+if ($repoUrl !== '') {
+    $softwareSchema['codeRepository'] = $repoUrl;
+}
+
+$faqItems = [
+    [
+        'question' => 'What is Keel?',
+        'answer' => 'Keel is an open-source PHP 8.2 starter kit for building SaaS applications, with passwordless authentication, Stripe billing, optional multi-tenancy, and a plain-PHP MVC structure.',
+    ],
+    [
+        'question' => 'Is Keel free, and what license does it use?',
+        'answer' => 'Yes. Keel is open source under the MIT License.',
+    ],
+    [
+        'question' => 'Does Keel require Laravel or another framework?',
+        'answer' => 'No. Keel uses a custom lightweight MVC foundation and does not require Laravel or another PHP framework.',
+    ],
+    [
+        'question' => 'Is this related to the Kubernetes tool or the London startup also called Keel?',
+        'answer' => 'No. This Keel project is unrelated. It is an independent open-source PHP starter kit for SaaS applications.',
+    ],
+    [
+        'question' => 'How are public discovery files maintained?',
+        'answer' => 'Public routes are marked in route registration with the sitemap option, and sitemap.xml, robots.txt, and llms.txt are generated from that route metadata and shared docs registry at request time.',
+    ],
+];
+
+$faqSchema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => array_map(static function (array $item): array {
+        return [
+            '@type' => 'Question',
+            'name' => $item['question'],
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => $item['answer'],
+            ],
+        ];
+    }, $faqItems),
+];
 
 $heroCommands = [
     'composer install',
@@ -66,6 +123,7 @@ $featureGroups = [
             'A hand-authored component layer (buttons, cards, tables, modals) is built on re-themeable design tokens.',
             'Light/dark theme toggle includes persisted user preference support.',
             'Lightweight PWA support is included via a manifest route plus app icons/favicons.',
+            'Self-maintaining sitemap.xml, robots.txt, and llms.txt: mark a route public once where it is registered, and it stays reflected everywhere with nothing to regenerate.',
             'PHPUnit scaffold + GitHub Actions CI included for testable pull requests.',
             'Docker Compose is available as an alternative for contributors not using XAMPP.',
         ],
@@ -256,6 +314,12 @@ $quickstartSteps = [
         }
     }
 </style>
+<script type="application/ld+json">
+<?= json_encode($softwareSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+</script>
+<script type="application/ld+json">
+<?= json_encode($faqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+</script>
 </head>
 <body class="min-h-screen antialiased">
     <a href="#main-content" class="keel-ring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-slate-950">Skip to content</a>
@@ -306,10 +370,10 @@ $quickstartSteps = [
                             <?= htmlspecialchars('PHP 8.2 starter kit for shipping real products') ?>
                         </p>
                         <h1 class="keel-text-strong max-w-4xl text-5xl font-semibold tracking-[-0.05em] sm:text-6xl lg:text-7xl">
-                            <?= htmlspecialchars('The backbone for new PHP apps when you want conventions, not framework gravity.') ?>
+                            <?= htmlspecialchars('Keel is an open-source PHP 8.2 starter kit for building SaaS applications.') ?>
                         </h1>
                         <p class="mt-6 max-w-2xl text-lg leading-8 text-[var(--keel-muted)] sm:text-xl">
-                            Keel gives you a lightweight MVC foundation with passwordless auth, Stripe billing, files + AI helpers, optional teams, queue/audit automation, API tokens, and contributor-ready tooling without hiding the code you will maintain later.
+                            It ships with passwordless authentication, Stripe billing, files + AI helpers, optional multi-tenancy, queue/audit automation, and developer tooling while keeping the codebase explicit and maintainable.
                         </p>
                         <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
                             <a href="#quickstart" class="keel-ring inline-flex items-center justify-center rounded-full bg-[var(--keel-accent)] px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#ff835f]">Get Started</a>
@@ -414,6 +478,21 @@ $quickstartSteps = [
                         <p class="text-base leading-8 text-[var(--keel-muted)]">Keel is opinionated where repetition wastes time: routing, controller structure, auth flow, mailer wiring, and asset handling already have a sensible shape.</p>
                         <p class="text-base leading-8 text-[var(--keel-muted)]">It stays honest by keeping the machinery small. When you open the code six months later, the path from request to response is still obvious and local.</p>
                         <p class="text-base leading-8 text-[var(--keel-muted)]">That balance is the point: enough structure to move quickly, not so much abstraction that the foundation starts steering the product.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+                <div class="keel-card rounded-[2rem] px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+                    <p class="keel-cyan-label text-sm font-medium uppercase tracking-[0.28em]">FAQ</p>
+                    <h2 class="keel-text-strong mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Quick answers for developers and crawlers.</h2>
+                    <div class="mt-6 space-y-6">
+                        <?php foreach ($faqItems as $faq): ?>
+                        <article>
+                            <h3 class="keel-text-strong text-xl font-semibold"><?= htmlspecialchars($faq['question']) ?></h3>
+                            <p class="mt-2 text-base leading-8 text-[var(--keel-muted)]"><?= htmlspecialchars($faq['answer']) ?></p>
+                        </article>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </section>

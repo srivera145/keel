@@ -45,6 +45,22 @@ class Response
         exit;
     }
 
+    public static function raw(string $body, int $status = 200, array $headers = []): never
+    {
+        if (self::$captureMode) {
+            throw new CapturedResponseException($status, $headers, $body);
+        }
+
+        self::setStatus($status);
+
+        foreach ($headers as $name => $value) {
+            header((string) $name . ': ' . (string) $value);
+        }
+
+        echo $body;
+        exit;
+    }
+
     private static function setStatus(int $status): void
     {
         $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';
