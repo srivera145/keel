@@ -183,7 +183,11 @@ storage/app/          Private uploaded files, not web-accessible.
 
 9. **Front-end assets**
 
-   There is no asset pipeline. `composer install` copies Deck into `public_html/deck/`, and `views/partials/head.php` emits the tags with `Deck::head()`. Keel's own CSS and JavaScript are served exactly as written from `public_html/css/keel.css` and `public_html/js/keel.js`.
+   There is no asset pipeline. Keel's entire interface — all 30 views and 4 shared partials, including the passwordless sign-in flow, the Stripe billing screens, the org and super-admin tables, and these docs — is built in [Deck](https://get-deck.dev), a CSS framework installed by Composer. There is no npm, no bundler, no build step and no `package.json`.
+
+   `composer install` copies Deck into `public_html/deck/`, and `views/partials/head.php` emits the tags with `Deck::head()`. Keel's own CSS and JavaScript are served exactly as written from `public_html/css/keel.css` and `public_html/js/keel.js`, in the four `app.*` cascade layers Deck reserves for the application — so Keel overrides Deck without a single `!important`.
+
+   The **Building the Interface** docs page ([`views/docs/interface.php`](views/docs/interface.php), served at `/docs/interface`) covers the helpers, the layers, and a complete worked view.
 
    Re-theme the whole app by changing `--hue-brand` in `public_html/css/keel.css`, or per tenant with `organizations.brand_hue`. Nothing is rebuilt either way. See the Theming page under `/docs`.
 

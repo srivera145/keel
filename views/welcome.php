@@ -215,7 +215,7 @@ $deckExtras = true; // the copy button on the install block
                         </div>
                         <div class="stat">
                             <dt class="stat-label">Assets</dt>
-                            <dd class="fw-semi">Deck, no build step</dd>
+                            <dd class="fw-semi"><a href="https://get-deck.dev" target="_blank" rel="noreferrer">Deck</a>, no build step</dd>
                         </div>
                     </dl>
                 </div>
@@ -298,6 +298,7 @@ $deckExtras = true; // the copy button on the install block
                         <p class="text-muted">It stays honest by keeping the machinery small. When you open the code six months later, the path from request to response is still obvious and local.</p>
                         <p class="text-muted">That balance is the point: enough structure to move quickly, not so much abstraction that the foundation starts steering the product.</p>
                     </div>
+                    <p class="text-muted">That applies to the interface too. Every screen in Keel — this page, the docs, the sign-in flow, the billing and admin tables — is built in <a href="https://get-deck.dev" target="_blank" rel="noreferrer">Deck</a>, a CSS framework installed by Composer. There is no npm, no bundler and no build step, and a tenant's brand colour is one inline style on the <code>&lt;html&gt;</code> tag.</p>
                 </div>
             </div>
         </section>

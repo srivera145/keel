@@ -18,7 +18,7 @@
         <li><code>app.components</code>: <code>.when-light</code> and <code>.when-dark</code>, <code>.table-empty</code>, <code>.brand-logo</code>, <code>.hue-swatch</code>, <code>.otp-input</code>.</li>
         <li><code>app.pages</code>: <code>.settings-page</code>, <code>.stage</code>, and the docs rail.</li>
     </ul>
-    <p>Never edit <code>public_html/deck/</code>. Composer republishes it on every install.</p>
+    <p>Never edit <code>public_html/deck/</code>. Composer republishes it on every install. <a href="/docs/interface">Building the Interface</a> covers the layer order and why a rule in <code>app.*</code> beats Deck without <code>!important</code>.</p>
 
     <h2>Light and dark</h2>
     <ul>
@@ -26,5 +26,13 @@
         <li><code>views/partials/theme-toggle.php</code> renders Deck's <code>[data-deck-theme]</code> button. The moon and sun swap through <code>.when-light</code> and <code>.when-dark</code>, because Deck exposes no state of its own on the button.</li>
         <li><code>public_html/js/keel.js</code> watches the attribute and posts to <code>/settings/theme</code>, so a signed-in user's choice follows them to another device.</li>
         <li>A short script in <code>views/partials/head.php</code> applies the saved theme before the first paint, which <code>deck.js</code> alone does not do.</li>
+    </ul>
+
+    <h2>Reference</h2>
+    <ul>
+        <li><a href="/docs/interface">Building the Interface</a> — the helpers, the layers, and a complete view.</li>
+        <li><a href="https://get-deck.dev/docs/guides/theming.php">Deck: theming</a> — the token ramp in full.</li>
+        <li><a href="https://get-deck.dev/docs/explain/why-one-hue.php">Deck: why one hue</a> — the reasoning behind <code>--hue-brand</code>.</li>
+        <li><a href="https://get-deck.dev/docs/guides/dark-mode.php">Deck: dark mode</a> — <code>light-dark()</code> and <code>color-scheme</code>.</li>
     </ul>
 </div>

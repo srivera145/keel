@@ -14,6 +14,7 @@ class DocsController extends Controller
             ['slug' => 'installation', 'title' => 'Installation', 'contentFile' => 'installation', 'group' => 'Getting Started'],
             ['slug' => 'project-structure', 'title' => 'Project Structure', 'contentFile' => 'project-structure', 'group' => 'Getting Started'],
             ['slug' => 'where-to-start-editing', 'title' => 'Where To Start Editing', 'contentFile' => 'where-to-start-editing', 'group' => 'Getting Started'],
+            ['slug' => 'interface', 'title' => 'Building the Interface', 'contentFile' => 'interface', 'group' => 'Getting Started'],
             ['slug' => 'authentication', 'title' => 'Authentication', 'contentFile' => 'authentication', 'group' => 'Features'],
             ['slug' => 'mailing', 'title' => 'Mailing', 'contentFile' => 'mailing', 'group' => 'Features'],
             ['slug' => 'security', 'title' => 'Security', 'contentFile' => 'security', 'group' => 'Features'],

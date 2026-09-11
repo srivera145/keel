@@ -25,8 +25,13 @@ $router-&gt;get('/example', [ExampleController::class, 'index']);</code></pre>
 
     <h3>3. Create the view</h3>
         <pre><code>&lt;!-- views/example/index.php --&gt;
+&lt;?php
+
+use EchoDial\Deck\Deck;
+use Keel\Core\Theme;
+?&gt;
 &lt;!DOCTYPE html&gt;
-&lt;html lang="en"&gt;
+&lt;html &lt;?= Deck::htmlAttributes(lang: 'en') ?&gt; &lt;?= Deck::theme(mode: Theme::serverPreference()) ?&gt;&gt;
 &lt;head&gt;
 &lt;?php require __DIR__ . '/../partials/head.php'; ?&gt;
 &lt;/head&gt;
@@ -36,11 +41,11 @@ $router-&gt;get('/example', [ExampleController::class, 'index']);</code></pre>
     &lt;/main&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
+    <p>The two helpers on <code>&lt;html&gt;</code> are what give the page its language, light/dark theme and brand hue. <a href="/docs/interface">Building the Interface</a> covers them, the component classes to build the body with, and a complete worked view.</p>
 
     <h2>Renaming Keel for a new project</h2>
     <ol>
         <li>Update <code>composer.json</code> package <code>name</code>.</li>
-        <li>Update <code>package.json</code> package <code>name</code>.</li>
         <li>Update <code>.env</code>: <code>APP_NAME</code>, <code>APP_URL</code>, and <code>DB_DATABASE</code>.</li>
         <li>Swap brand assets in <code>public_html/images/brand/</code> and matching resource images.</li>
         <li>Review landing-page copy in <code>views/welcome.php</code>.</li>
