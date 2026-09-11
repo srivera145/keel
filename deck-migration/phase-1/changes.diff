@@ -1,0 +1,494 @@
+diff --git a/before/.gitignore b/after/.gitignore
+index f221e82..49da9e0 100644
+--- a/before/.gitignore
++++ b/after/.gitignore
+@@ -5,6 +5,7 @@
+ /public_html/assets/brand/*
+ !/public_html/assets/brand/*.png
+ /public_html/hot
++/public_html/deck/
+ public_html/uploads/*
+ !public_html/uploads/.gitkeep
+ .env
+diff --git a/before/composer.json b/after/composer.json
+index 1c72686..ca01d46 100644
+--- a/before/composer.json
++++ b/after/composer.json
+@@ -5,6 +5,7 @@
+     "license": "MIT",
+     "require": {
+         "php": "^8.2",
++        "echodial/deck": "^0.1.3",
+         "phpmailer/phpmailer": "^6.9",
+         "stripe/stripe-php": "^20.3",
+         "vlucas/phpdotenv": "^5.6"
+@@ -23,6 +24,13 @@
+         "phpunit/phpunit": "^11.5"
+     },
+     "scripts": {
++        "post-install-cmd": [
++            "EchoDial\\Deck\\Installer::postInstall"
++        ],
++        "post-update-cmd": [
++            "EchoDial\\Deck\\Installer::postInstall"
++        ],
++        "deck-publish": "EchoDial\\Deck\\Installer::publish",
+         "test:db": "php scripts/setup_test_db.php",
+         "test:feature": [
+             "@test:db",
+@@ -33,6 +41,12 @@
+             "vendor/bin/phpunit"
+         ]
+     },
++    "extra": {
++        "deck": {
++            "publish-to": "public_html/deck",
++            "auto-publish": true
++        }
++    },
+     "config": {
+         "optimize-autoloader": true,
+         "sort-packages": true
+diff --git a/after/database/migrations/010_add_brand_hue_to_organizations.sql b/after/database/migrations/010_add_brand_hue_to_organizations.sql
+new file mode 100644
+index 0000000..3af4673
+--- /dev/null
++++ b/after/database/migrations/010_add_brand_hue_to_organizations.sql
+@@ -0,0 +1,2 @@
++-- Per-tenant brand hue, 0-360, emitted as Deck's --hue-brand on <html>. NULL keeps Keel's default hue.
++ALTER TABLE organizations ADD COLUMN brand_hue SMALLINT UNSIGNED NULL DEFAULT NULL;
+diff --git a/after/public_html/css/keel.css b/after/public_html/css/keel.css
+new file mode 100644
+index 0000000..f634ea4
+--- /dev/null
++++ b/after/public_html/css/keel.css
+@@ -0,0 +1,79 @@
++/* ==========================================================================
++   Keel — the app layers on top of Deck
++   --------------------------------------------------------------------------
++   deck.css declares the cascade order: every deck.* layer first, then
++   app.base, app.components, app.pages, app.overrides. A rule in one of those
++   beats any Deck rule with no !important and no specificity games, as long as
++   this file loads after deck.css (views/partials/head.php guarantees that).
++   Loaded first, these @layer blocks would declare the order themselves and
++   Deck would win everything.
++
++   Never edit public_html/deck/: Composer republishes it on every install.
++   ========================================================================== */
++
++@layer app.base {
++  :root {
++    /* Keel's Tailwind brand colour was #ff6b3d, which is oklch(70.5% .191 37.5).
++       A tenant's organizations.brand_hue replaces this with an inline style on
++       <html>, which outranks every layer. */
++    --hue-brand: 38;
++  }
++
++  /* Deck's reset has no [hidden] rule, so any Deck class that sets display
++     (.btn, .card, .stack, ...) overrides the attribute and the element stays
++     on screen. app.base sits after every deck.* layer, so this wins. */
++  [hidden] { display: none; }
++}
++
++@layer app.components {
++  /* A table inside a card. .table-wrap brings its own border and radius, so
++     inside a .card it draws a second frame one pixel in from the first. */
++  .card > .table-wrap {
++    border: 0;
++    border-radius: 0;
++  }
++
++  @media (max-width: 39.999rem) {
++    /* Below 40rem .table-stack turns each row into a bordered box. Flush with
++       the card's edge that reads as a border on a border, and the last box
++       keeps its bottom margin, leaving a strip above the card's own border. */
++    .card > .table-wrap:has(> .table-stack) { padding: var(--space-3); }
++    .table-stack tbody tr:last-child { margin-block-end: 0; }
++  }
++
++  /* The cell that holds an .empty state across every column. Deck has
++     .dg-empty for the data grid and nothing for .table: the cell padding
++     stacks on the empty state's own, the row picks up the hover tint, and
++     .table-stack turns the cell into a label/value row with no label. */
++  .table .table-empty { padding: 0; }
++  .table tbody tr:has(> .table-empty):hover { background: none; }
++  @media (max-width: 39.999rem) {
++    .table-stack tr:has(> .table-empty) { border: 0; padding: 0; }
++    .table-stack .table-empty { display: block; }
++    .table-stack .table-empty::before { content: none; }
++  }
++
++  /* [data-deck-theme] flips the theme but exposes no state, so the button
++     cannot show which way it will switch. The icon follows the theme in
++     effect: the attribute when one is set, the OS preference when not. */
++  .theme-toggle .icon-to-light { display: none; }
++  :root[data-theme="dark"] .theme-toggle .icon-to-dark { display: none; }
++  :root[data-theme="dark"] .theme-toggle .icon-to-light { display: block; }
++  @media (prefers-color-scheme: dark) {
++    :root:not([data-theme]) .theme-toggle .icon-to-dark { display: none; }
++    :root:not([data-theme]) .theme-toggle .icon-to-light { display: block; }
++  }
++}
++
++@layer app.pages {
++  /* Keel's settings pages: a 64rem column (Tailwind's max-w-5xl) beside a
++     24rem rail. Deck's container steps are 40, 56, 76 and 90rem, and .split's
++     rail is a fixed width, so both are set once here rather than per view.
++     .section is page rhythm for marketing pages (about 6rem at desktop); an
++     app screen wants the 2.5rem the Tailwind view had. */
++  .settings-page {
++    --container: 64rem;
++    --rail: 24rem;
++    padding-block: var(--space-10);
++  }
++}
+diff --git a/after/public_html/js/keel.js b/after/public_html/js/keel.js
+new file mode 100644
+index 0000000..41f0c2a
+--- /dev/null
++++ b/after/public_html/js/keel.js
+@@ -0,0 +1,38 @@
++/* Keel's glue for pages styled with Deck.
++ *
++ * Deck's [data-deck-theme] button and Deck.theme() save the choice to
++ * localStorage only. A signed-in Keel user's theme also lives on the server
++ * (users.theme_preference, POST /settings/theme), so it follows them to other
++ * devices and to pages that are still on Tailwind. Deck fires no event when the
++ * theme changes, so this watches the attribute Deck writes.
++ */
++(() => {
++	const root = document.documentElement;
++	const authenticated = document.querySelector('meta[name="keel-authenticated"]')?.getAttribute('content') === '1';
++	const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
++
++	if (!authenticated || !csrfToken) {
++		return;
++	}
++
++	new MutationObserver((records) => {
++		const theme = root.getAttribute('data-theme');
++
++		// deck.js re-applies the saved theme on DOMContentLoaded; an unchanged value is not a choice.
++		if (records[0].oldValue === theme || (theme !== 'light' && theme !== 'dark')) {
++			return;
++		}
++
++		fetch('/settings/theme', {
++			method: 'POST',
++			headers: {
++				'Content-Type': 'application/json',
++				'Accept': 'application/json',
++				'X-CSRF-Token': csrfToken,
++			},
++			body: JSON.stringify({ theme }),
++		}).catch(() => {
++			// Keep the local choice even if saving it fails.
++		});
++	}).observe(root, { attributes: true, attributeFilter: ['data-theme'], attributeOldValue: true });
++})();
+diff --git a/before/views/partials/head.php b/after/views/partials/head.php
+index 3859dbe..72ab921 100644
+--- a/before/views/partials/head.php
++++ b/after/views/partials/head.php
+@@ -1,6 +1,9 @@
+ <meta charset="UTF-8">
+-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <?php
++// Views move to Deck one at a time by setting $ui = 'deck' before requiring this partial.
++// A page gets Deck or the Vite/Tailwind bundle, never both, so the two stylesheets never meet.
++$ui = $ui ?? 'tailwind';
++
+ $serverTheme = \Keel\Core\Theme::serverPreference();
+ $isAuthenticated = \Keel\Core\Theme::isAuthenticated();
+ 
+@@ -24,6 +27,33 @@ $siteName = trim((string) \Keel\Core\Env::get('APP_NAME', 'Keel'));
+ $siteName = $siteName !== '' ? $siteName : 'Keel';
+ $socialImage = $appUrl !== '' ? $appUrl . '/images/brand/keel.png' : '/images/brand/keel.png';
+ ?>
++<?php if ($ui === 'deck'): ?>
++<script>
++	/* Apply the saved theme before first paint. deck.js restores it too, but not until
++	   DOMContentLoaded, after a returning dark-mode visitor has already seen a light frame.
++	   A signed-in user's server preference wins and is copied into Deck's storage key so
++	   deck.js restores the same value; a guest's old keel-theme choice carries over once. */
++	(function () {
++		var serverTheme = <?= json_encode($serverTheme, JSON_UNESCAPED_SLASHES) ?>;
++
++		try {
++			if (serverTheme) {
++				localStorage.setItem('deck-theme', serverTheme);
++			} else if (!localStorage.getItem('deck-theme') && localStorage.getItem('keel-theme')) {
++				localStorage.setItem('deck-theme', localStorage.getItem('keel-theme'));
++			}
++
++			var theme = serverTheme || localStorage.getItem('deck-theme');
++			if (theme === 'light' || theme === 'dark') {
++				document.documentElement.setAttribute('data-theme', theme);
++			}
++		} catch (error) {
++			// No storage access: the server attribute or the OS preference decides.
++		}
++	})();
++</script>
++<?php else: ?>
++<meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <script>
+ 	(function () {
+ 		var serverTheme = <?= json_encode($serverTheme, JSON_UNESCAPED_SLASHES) ?>;
+@@ -56,6 +86,7 @@ $socialImage = $appUrl !== '' ? $appUrl . '/images/brand/keel.png' : '/images/br
+ 		document.documentElement.setAttribute('data-theme', theme);
+ 	})();
+ </script>
++<?php endif; ?>
+ <meta name="csrf-token" content="<?= htmlspecialchars(\Keel\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+ <meta name="keel-authenticated" content="<?= $isAuthenticated ? '1' : '0' ?>">
+ <link rel="manifest" href="/manifest.webmanifest">
+@@ -83,4 +114,21 @@ $socialImage = $appUrl !== '' ? $appUrl . '/images/brand/keel.png' : '/images/br
+ <link rel="icon" type="image/x-icon" href="/favicon.ico">
+ <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+ <title><?= htmlspecialchars($resolvedTitle, ENT_QUOTES, 'UTF-8') ?></title>
++<?php if ($ui === 'deck'): ?>
++<?php
++// deck.js alone: the theme switch and back-to-top fallback are all a converted view uses so far.
++// Composer publishes these files into public_html/deck (see extra.deck in composer.json).
++\EchoDial\Deck\Deck::configure([
++	'base' => '/deck',
++	'root' => dirname(__DIR__, 2) . '/public_html',
++	'extras' => false,
++]);
++$publicAsset = static fn (string $path): string => $path . '?v=' . (int) @filemtime(dirname(__DIR__, 2) . '/public_html' . $path);
++?>
++<?= \EchoDial\Deck\Deck::head() ?>
++<link rel="stylesheet" href="<?= htmlspecialchars($publicAsset('/css/keel.css'), ENT_QUOTES, 'UTF-8') ?>">
++<script src="<?= htmlspecialchars($publicAsset('/js/keel.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
++<noscript><style>[data-deck-theme] { display: none; }</style></noscript>
++<?php else: ?>
+ <?= \Keel\Core\Vite::assets(['resources/js/app.js']) ?>
++<?php endif; ?>
+diff --git a/before/views/settings/members.php b/after/views/settings/members.php
+index d7f21cf..55cc588 100644
+--- a/before/views/settings/members.php
++++ b/after/views/settings/members.php
+@@ -1,50 +1,74 @@
+ <?php
++use EchoDial\Deck\Deck;
++use Keel\Core\Csrf;
++use Keel\Core\Theme;
++
+ $members = $members ?? [];
+ $pendingInvites = $pendingInvites ?? [];
++$brandHue = isset($organization['brand_hue']) ? (int) $organization['brand_hue'] : null;
++$ui = 'deck';
+ ?>
+ <!DOCTYPE html>
+-<html lang="en"<?= \Keel\Core\Theme::htmlAttribute() ?>>
++<html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(hue: $brandHue, mode: Theme::serverPreference()) ?>>
+ <head>
+ <?php require __DIR__ . '/../partials/head.php'; ?>
+ </head>
+-<body class="bg-gray-50 min-h-screen">
+-    <div class="mx-auto max-w-5xl px-4 py-10">
+-        <div class="mb-8 flex items-center justify-between gap-4">
+-            <div>
+-                <p class="text-sm text-gray-500">Organization members</p>
+-                <h1 class="text-3xl font-bold text-gray-900"><?= htmlspecialchars((string) ($organization['name'] ?? 'Organization')) ?></h1>
++<body>
++    <span id="top" tabindex="-1"></span>
++
++    <main class="container settings-page stack stack-6">
++        <header class="bar">
++            <div class="stack stack-2">
++                <nav aria-label="Breadcrumb">
++                    <ol class="breadcrumb">
++                        <li><a href="/settings/organization">Organization settings</a></li>
++                        <li><span aria-current="page">Members</span></li>
++                    </ol>
++                </nav>
++                <h1 class="h2"><?= htmlspecialchars((string) ($organization['name'] ?? 'Organization')) ?></h1>
+             </div>
+-            <a href="/settings/organization" class="text-sm text-gray-500 hover:text-gray-900">Organization settings</a>
+-        </div>
++            <button type="button" class="btn btn-icon btn-ghost theme-toggle push" data-deck-theme aria-label="Switch between light and dark theme">
++                <?= Deck::icon('moon', 'icon icon-to-dark') ?>
++                <?= Deck::icon('sun', 'icon icon-to-light') ?>
++            </button>
++        </header>
+ 
+         <?php if (!empty($_GET['status']) && $_GET['status'] === 'invite_sent'): ?>
+-        <div class="alert alert-success mb-6 px-4 py-3">Invite sent.</div>
++        <div class="alert alert-good">
++            <?= Deck::icon('check-circle') ?>
++            <p>Invite sent.</p>
++        </div>
+         <?php endif; ?>
+ 
+         <?php if (!empty($_GET['error'])): ?>
+-        <div class="alert alert-error mb-6 px-4 py-3"><?= htmlspecialchars((string) $_GET['error']) ?></div>
++        <div class="alert alert-bad">
++            <?= Deck::icon('alert-circle') ?>
++            <p><?= htmlspecialchars((string) $_GET['error']) ?></p>
++        </div>
+         <?php endif; ?>
+ 
+-        <div class="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+-            <div class="card">
+-                <h2 class="text-lg font-semibold text-gray-900">Team members</h2>
+-                <div class="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+-                    <table class="table">
++        <div class="split">
++            <section class="card" aria-labelledby="members-title">
++                <div class="card-header">
++                    <h2 id="members-title" class="card-title">Team members</h2>
++                </div>
++                <div class="table-wrap" tabindex="0" role="region" aria-labelledby="members-title">
++                    <table class="table table-stack">
+                         <thead>
+                             <tr>
+-                                <th>Email</th>
+-                                <th>Role</th>
+-                                <th>Status</th>
++                                <th scope="col">Email</th>
++                                <th scope="col">Role</th>
++                                <th scope="col">Status</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             <?php if ($members === []): ?>
+                             <tr>
+-                                <td colspan="3" class="p-6">
+-                                    <div class="empty-state">
+-                                        <span class="empty-state-icon" aria-hidden="true">m</span>
+-                                        <p class="empty-state-title">No members yet</p>
+-                                        <p class="empty-state-text">Team members will appear here after they join the organization.</p>
++                                <td colspan="3" class="table-empty">
++                                    <div class="empty">
++                                        <span class="empty-art"><?= Deck::icon('users') ?></span>
++                                        <p class="empty-title">No members yet</p>
++                                        <p>Team members will appear here after they join the organization.</p>
+                                     </div>
+                                 </td>
+                             </tr>
+@@ -52,13 +76,13 @@ $pendingInvites = $pendingInvites ?? [];
+ 
+                             <?php foreach ($members as $member): ?>
+                             <tr>
+-                                <td class="font-medium text-gray-900"><?= htmlspecialchars((string) $member['email']) ?></td>
+-                                <td class="uppercase tracking-wide"><?= htmlspecialchars((string) $member['role']) ?></td>
+-                                <td>
++                                <td data-label="Email" class="fw-medium"><?= htmlspecialchars((string) $member['email']) ?></td>
++                                <td data-label="Role" class="uppercase"><?= htmlspecialchars((string) $member['role']) ?></td>
++                                <td data-label="Status">
+                                     <?php if ((int) ($member['is_super_admin'] ?? 0) === 1): ?>
+-                                    <span class="badge badge-neutral">Super admin</span>
++                                    <span class="badge">Super admin</span>
+                                     <?php else: ?>
+-                                    <span class="text-xs text-gray-500">Member</span>
++                                    <span class="text-muted">Member</span>
+                                     <?php endif; ?>
+                                 </td>
+                             </tr>
+@@ -66,47 +90,51 @@ $pendingInvites = $pendingInvites ?? [];
+                         </tbody>
+                     </table>
+                 </div>
+-            </div>
++            </section>
+ 
+-            <div class="space-y-6">
+-                <div class="card">
+-                    <h2 class="text-lg font-semibold text-gray-900">Invite teammate</h2>
+-                    <form method="POST" action="/settings/members/invite" class="mt-4 space-y-4">
+-                        <?= \Keel\Core\Csrf::field() ?>
+-                        <div>
+-                            <label class="form-label">Email</label>
+-                            <input type="email" name="email" class="form-input" required>
++            <div class="stack stack-6">
++                <section class="card" aria-labelledby="invite-title">
++                    <div class="card-header">
++                        <h2 id="invite-title" class="card-title">Invite teammate</h2>
++                    </div>
++                    <form method="POST" action="/settings/members/invite" class="card-body">
++                        <?= Csrf::field() ?>
++                        <div class="field">
++                            <label class="label" for="invite-email">Email</label>
++                            <input id="invite-email" type="email" name="email" class="input" autocomplete="email" required>
+                         </div>
+-                        <div>
+-                            <label class="form-label">Role</label>
+-                            <select name="role" class="form-input">
++                        <div class="field">
++                            <label class="label" for="invite-role">Role</label>
++                            <select id="invite-role" name="role" class="select">
+                                 <option value="member">Member</option>
+                                 <option value="admin">Admin</option>
+                             </select>
+                         </div>
+-                        <button type="submit" class="btn btn-secondary btn-md w-full">Send invite</button>
++                        <button type="submit" class="btn btn-primary btn-block">Send invite</button>
+                     </form>
+-                </div>
++                </section>
+ 
+-                <div class="card">
+-                    <h2 class="text-lg font-semibold text-gray-900">Pending invites</h2>
+-                    <div class="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+-                        <table class="table">
++                <section class="card" aria-labelledby="invites-title">
++                    <div class="card-header">
++                        <h2 id="invites-title" class="card-title">Pending invites</h2>
++                    </div>
++                    <div class="table-wrap" tabindex="0" role="region" aria-labelledby="invites-title">
++                        <table class="table table-stack">
+                             <thead>
+                                 <tr>
+-                                    <th>Email</th>
+-                                    <th>Role</th>
+-                                    <th>Expires</th>
++                                    <th scope="col">Email</th>
++                                    <th scope="col">Role</th>
++                                    <th scope="col">Expires</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 <?php if ($pendingInvites === []): ?>
+                                 <tr>
+-                                    <td colspan="3" class="p-6">
+-                                        <div class="empty-state">
+-                                            <span class="empty-state-icon" aria-hidden="true">i</span>
+-                                            <p class="empty-state-title">No pending invites</p>
+-                                            <p class="empty-state-text">Invites you send will appear here until accepted or expired.</p>
++                                    <td colspan="3" class="table-empty">
++                                        <div class="empty">
++                                            <span class="empty-art"><?= Deck::icon('mail') ?></span>
++                                            <p class="empty-title">No pending invites</p>
++                                            <p>Invites you send will appear here until accepted or expired.</p>
+                                         </div>
+                                     </td>
+                                 </tr>
+@@ -114,17 +142,19 @@ $pendingInvites = $pendingInvites ?? [];
+ 
+                                 <?php foreach ($pendingInvites as $invite): ?>
+                                 <tr>
+-                                    <td class="font-medium text-gray-900"><?= htmlspecialchars((string) $invite['email']) ?></td>
+-                                    <td class="uppercase tracking-wide"><?= htmlspecialchars((string) $invite['role']) ?></td>
+-                                    <td>Expires <?= htmlspecialchars((string) $invite['expires_at']) ?></td>
++                                    <td data-label="Email" class="fw-medium"><?= htmlspecialchars((string) $invite['email']) ?></td>
++                                    <td data-label="Role" class="uppercase"><?= htmlspecialchars((string) $invite['role']) ?></td>
++                                    <td data-label="Expires" class="nums"><?= htmlspecialchars((string) $invite['expires_at']) ?></td>
+                                 </tr>
+                                 <?php endforeach; ?>
+                             </tbody>
+                         </table>
+                     </div>
+-                </div>
++                </section>
+             </div>
+         </div>
+-    </div>
++    </main>
++
++    <a class="back-to-top" href="#top" aria-label="Back to top"><?= Deck::icon('chevron-up') ?></a>
+ </body>
+-</html>
+\ No newline at end of file
++</html>

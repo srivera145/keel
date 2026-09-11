@@ -1,0 +1,79 @@
+/* ==========================================================================
+   Keel — the app layers on top of Deck
+   --------------------------------------------------------------------------
+   deck.css declares the cascade order: every deck.* layer first, then
+   app.base, app.components, app.pages, app.overrides. A rule in one of those
+   beats any Deck rule with no !important and no specificity games, as long as
+   this file loads after deck.css (views/partials/head.php guarantees that).
+   Loaded first, these @layer blocks would declare the order themselves and
+   Deck would win everything.
+
+   Never edit public_html/deck/: Composer republishes it on every install.
+   ========================================================================== */
+
+@layer app.base {
+  :root {
+    /* Keel's Tailwind brand colour was #ff6b3d, which is oklch(70.5% .191 37.5).
+       A tenant's organizations.brand_hue replaces this with an inline style on
+       <html>, which outranks every layer. */
+    --hue-brand: 38;
+  }
+
+  /* Deck's reset has no [hidden] rule, so any Deck class that sets display
+     (.btn, .card, .stack, ...) overrides the attribute and the element stays
+     on screen. app.base sits after every deck.* layer, so this wins. */
+  [hidden] { display: none; }
+}
+
+@layer app.components {
+  /* A table inside a card. .table-wrap brings its own border and radius, so
+     inside a .card it draws a second frame one pixel in from the first. */
+  .card > .table-wrap {
+    border: 0;
+    border-radius: 0;
+  }
+
+  @media (max-width: 39.999rem) {
+    /* Below 40rem .table-stack turns each row into a bordered box. Flush with
+       the card's edge that reads as a border on a border, and the last box
+       keeps its bottom margin, leaving a strip above the card's own border. */
+    .card > .table-wrap:has(> .table-stack) { padding: var(--space-3); }
+    .table-stack tbody tr:last-child { margin-block-end: 0; }
+  }
+
+  /* The cell that holds an .empty state across every column. Deck has
+     .dg-empty for the data grid and nothing for .table: the cell padding
+     stacks on the empty state's own, the row picks up the hover tint, and
+     .table-stack turns the cell into a label/value row with no label. */
+  .table .table-empty { padding: 0; }
+  .table tbody tr:has(> .table-empty):hover { background: none; }
+  @media (max-width: 39.999rem) {
+    .table-stack tr:has(> .table-empty) { border: 0; padding: 0; }
+    .table-stack .table-empty { display: block; }
+    .table-stack .table-empty::before { content: none; }
+  }
+
+  /* [data-deck-theme] flips the theme but exposes no state, so the button
+     cannot show which way it will switch. The icon follows the theme in
+     effect: the attribute when one is set, the OS preference when not. */
+  .theme-toggle .icon-to-light { display: none; }
+  :root[data-theme="dark"] .theme-toggle .icon-to-dark { display: none; }
+  :root[data-theme="dark"] .theme-toggle .icon-to-light { display: block; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .theme-toggle .icon-to-dark { display: none; }
+    :root:not([data-theme]) .theme-toggle .icon-to-light { display: block; }
+  }
+}
+
+@layer app.pages {
+  /* Keel's settings pages: a 64rem column (Tailwind's max-w-5xl) beside a
+     24rem rail. Deck's container steps are 40, 56, 76 and 90rem, and .split's
+     rail is a fixed width, so both are set once here rather than per view.
+     .section is page rhythm for marketing pages (about 6rem at desktop); an
+     app screen wants the 2.5rem the Tailwind view had. */
+  .settings-page {
+    --container: 64rem;
+    --rail: 24rem;
+    padding-block: var(--space-10);
+  }
+}

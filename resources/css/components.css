@@ -1,0 +1,197 @@
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-md {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-5 py-2.5 text-base;
+  }
+
+  .btn-xl {
+    @apply px-6 py-3 text-lg;
+  }
+
+  .btn-2xl {
+    @apply px-7 py-3.5 text-xl;
+  }
+
+  .btn-primary {
+    background-color: var(--color-brand);
+    color: var(--color-brand-contrast);
+    box-shadow: var(--shadow-brand-cta);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-brand-hover);
+  }
+
+  .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  .btn-danger {
+    background-color: var(--color-danger);
+    color: var(--color-text);
+  }
+
+  .btn-danger:hover {
+    background-color: var(--color-danger-hover);
+  }
+
+  .card {
+    @apply rounded-2xl border p-6;
+    border-color: var(--color-card-border);
+    background-color: var(--color-card-bg);
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold;
+  }
+
+  .badge-sm {
+    @apply px-2 py-0.5 text-[11px];
+  }
+
+  .badge-lg {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .badge-neutral {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .badge-success {
+    background-color: var(--color-success-soft);
+    color: var(--color-success-text);
+  }
+
+  .alert {
+    @apply rounded-lg border text-sm;
+  }
+
+  .alert-error {
+    border-color: var(--color-danger-border);
+    background-color: var(--color-danger-soft);
+    color: var(--color-danger-text);
+  }
+
+  .alert-success {
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-soft);
+    color: var(--color-success-text);
+  }
+
+  .form-label {
+    @apply mb-1 block text-sm font-medium;
+    color: var(--color-text-muted);
+  }
+
+  .form-input {
+    @apply w-full rounded-lg border px-3 py-2 text-sm;
+    border-color: var(--color-input-border);
+  }
+
+  .table {
+    @apply min-w-full text-sm;
+  }
+
+  .table thead {
+    @apply text-left;
+    background-color: var(--color-table-head);
+    color: var(--color-text-muted);
+  }
+
+  .table th {
+    @apply px-4 py-3 font-medium;
+  }
+
+  .table td {
+    @apply px-4 py-3;
+    color: var(--color-text-muted);
+  }
+
+  .table tbody tr {
+    @apply border-t;
+    border-color: var(--color-card-border);
+  }
+
+  .table tbody tr:nth-child(even) {
+    background-color: var(--color-surface-muted);
+  }
+
+  .table tbody tr:hover {
+    background-color: var(--color-surface-muted);
+  }
+
+  .pagination {
+    @apply mt-6 flex items-center justify-between text-sm;
+    color: var(--color-text-muted);
+  }
+
+  .pagination-links {
+    @apply flex gap-2;
+  }
+
+  .pagination-link {
+    @apply inline-flex items-center rounded border px-3 py-1.5;
+    border-color: var(--color-input-border);
+    color: var(--color-text-strong);
+  }
+
+  .pagination-link:hover {
+    background-color: var(--color-surface-muted);
+  }
+
+  .empty-state {
+    @apply rounded-xl border border-dashed px-6 py-8 text-center;
+    border-color: var(--color-empty-state-border);
+    background-color: var(--color-empty-state-bg);
+  }
+
+  .empty-state-icon {
+    @apply mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold;
+    background-color: var(--color-empty-state-icon-bg);
+    color: var(--color-empty-state-icon-text);
+  }
+
+  .empty-state-title {
+    @apply mt-3 text-sm font-semibold;
+    color: var(--color-text-strong);
+  }
+
+  .empty-state-text {
+    @apply mt-1 text-sm;
+    color: var(--color-text-muted);
+  }
+
+  .empty-state-action {
+    @apply mt-4;
+  }
+
+  .modal {
+    @apply fixed inset-0 z-[120] hidden items-center justify-center p-4;
+    background-color: var(--color-modal-backdrop);
+  }
+
+  .modal.is-open {
+    @apply flex;
+  }
+
+  .modal-panel {
+    @apply card w-full max-w-md shadow-2xl;
+  }
+}

@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    `key` VARCHAR(191) NOT NULL,
+    attempts INT NOT NULL DEFAULT 1,
+    expires_at DATETIME NOT NULL,
+    UNIQUE KEY uniq_key (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

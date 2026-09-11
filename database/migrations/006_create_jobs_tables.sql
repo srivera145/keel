@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS jobs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    queue VARCHAR(50) NOT NULL DEFAULT 'default',
+    job_class VARCHAR(255) NOT NULL,
+    payload TEXT NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    available_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reserved_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_queue_available (queue, available_at, reserved_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS failed_jobs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    queue VARCHAR(50) NOT NULL,
+    job_class VARCHAR(255) NOT NULL,
+    payload TEXT NOT NULL,
+    exception TEXT NOT NULL,
+    failed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

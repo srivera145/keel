@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS organizations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE users
+    ADD COLUMN organization_id INT NULL AFTER id,
+    ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'owner' AFTER organization_id,
+    ADD COLUMN is_super_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER role,
+    ADD CONSTRAINT fk_users_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS organization_invites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id INT NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'member',
+    token_hash VARCHAR(255) NOT NULL,
+    invited_by INT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    accepted_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    FOREIGN KEY (invited_by) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
