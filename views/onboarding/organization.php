@@ -1,26 +1,42 @@
+<?php
+use EchoDial\Deck\Deck;
+use Keel\Core\Csrf;
+use Keel\Core\Theme;
+?>
 <!DOCTYPE html>
-<html lang="en"<?= \Keel\Core\Theme::htmlAttribute() ?>>
+<html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(mode: Theme::serverPreference()) ?>>
 <head>
 <?php require __DIR__ . '/../partials/head.php'; ?>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
-    <div class="card w-full max-w-md p-8">
-        <p class="text-sm text-gray-500">Organization setup</p>
-        <h1 class="mt-2 text-2xl font-bold text-gray-900">What is your organization called?</h1>
-        <p class="mt-3 text-sm leading-6 text-gray-600">Create the team space above your account. You will be the owner.</p>
+<body>
+    <?php $themeToggleClass = 'theme-toggle-floating'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
 
-        <?php if (!empty($_GET['error']) && $_GET['error'] === 'missing_name'): ?>
-        <div class="alert alert-error mt-4 px-3 py-2">Enter an organization name.</div>
-        <?php endif; ?>
+    <main class="container stage" style="--stage-width: 30rem">
+        <section class="card">
+            <div class="card-body stack stack-4">
+                <div class="stack stack-2">
+                    <p class="text-sm uppercase text-muted">Organization setup</p>
+                    <h1 class="h3">What is your organization called?</h1>
+                    <p class="text-sm text-muted">Create the team space above your account. You will be the owner.</p>
+                </div>
 
-        <form method="POST" action="/onboarding/organization" class="mt-6 space-y-4">
-            <?= \Keel\Core\Csrf::field() ?>
-            <div>
-                <label for="organization-name" class="form-label">Organization name</label>
-                <input id="organization-name" name="name" type="text" class="form-input" placeholder="Acme Motors" required>
+                <?php if (!empty($_GET['error']) && $_GET['error'] === 'missing_name'): ?>
+                <div class="alert alert-bad">
+                    <?= Deck::icon('alert-circle') ?>
+                    <p>Enter an organization name.</p>
+                </div>
+                <?php endif; ?>
+
+                <form method="POST" action="/onboarding/organization" class="stack stack-4">
+                    <?= Csrf::field() ?>
+                    <div class="field">
+                        <label class="label" for="organization-name">Organization name</label>
+                        <input id="organization-name" name="name" type="text" class="input" placeholder="Acme Motors" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Create organization</button>
+                </form>
             </div>
-            <button type="submit" class="btn btn-secondary btn-md w-full">Create organization</button>
-        </form>
-    </div>
+        </section>
+    </main>
 </body>
 </html>

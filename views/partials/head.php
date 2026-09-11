@@ -1,9 +1,5 @@
 <meta charset="UTF-8">
 <?php
-// Views move to Deck one at a time by setting $ui = 'deck' before requiring this partial.
-// A page gets Deck or the Vite/Tailwind bundle, never both, so the two stylesheets never meet.
-$ui = $ui ?? 'tailwind';
-
 $serverTheme = \Keel\Core\Theme::serverPreference();
 $isAuthenticated = \Keel\Core\Theme::isAuthenticated();
 
@@ -26,13 +22,24 @@ $resolvedDescription = trim((string) ($metaDescription ?? $defaultDescription));
 $siteName = trim((string) \Keel\Core\Env::get('APP_NAME', 'Keel'));
 $siteName = $siteName !== '' ? $siteName : 'Keel';
 $socialImage = $appUrl !== '' ? $appUrl . '/images/brand/keel.png' : '/images/brand/keel.png';
+
+// deck.js carries the theme switch and the back-to-top fallback, which every view uses. A
+// view that needs the copy button, drawer or carousel sets $deckExtras = true before
+// requiring this partial. Composer publishes these files into public_html/deck
+// (see extra.deck in composer.json); Deck::head() emits the tags, including the viewport
+// meta its mobile-first layout assumes.
+\EchoDial\Deck\Deck::configure([
+	'base' => '/deck',
+	'root' => dirname(__DIR__, 2) . '/public_html',
+	'extras' => $deckExtras ?? false,
+]);
+$publicAsset = static fn (string $path): string => $path . '?v=' . (int) @filemtime(dirname(__DIR__, 2) . '/public_html' . $path);
 ?>
-<?php if ($ui === 'deck'): ?>
 <script>
 	/* Apply the saved theme before first paint. deck.js restores it too, but not until
 	   DOMContentLoaded, after a returning dark-mode visitor has already seen a light frame.
 	   A signed-in user's server preference wins and is copied into Deck's storage key so
-	   deck.js restores the same value; a guest's old keel-theme choice carries over once. */
+	   deck.js restores the same value; a guest's older keel-theme choice carries over once. */
 	(function () {
 		var serverTheme = <?= json_encode($serverTheme, JSON_UNESCAPED_SLASHES) ?>;
 
@@ -52,41 +59,6 @@ $socialImage = $appUrl !== '' ? $appUrl . '/images/brand/keel.png' : '/images/br
 		}
 	})();
 </script>
-<?php else: ?>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-	(function () {
-		var serverTheme = <?= json_encode($serverTheme, JSON_UNESCAPED_SLASHES) ?>;
-		var isAuthenticated = <?= $isAuthenticated ? 'true' : 'false' ?>;
-		var theme = serverTheme;
-
-		if (!theme && !isAuthenticated) {
-			try {
-				var storedTheme = localStorage.getItem('keel-theme');
-				if (storedTheme === 'light' || storedTheme === 'dark') {
-					theme = storedTheme;
-				}
-			} catch (error) {
-				// Ignore storage access errors and continue to system/default resolution.
-			}
-		}
-
-		if (!theme && window.matchMedia) {
-			try {
-				theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-			} catch (error) {
-				theme = null;
-			}
-		}
-
-		if (!theme) {
-			theme = 'dark';
-		}
-
-		document.documentElement.setAttribute('data-theme', theme);
-	})();
-</script>
-<?php endif; ?>
 <meta name="csrf-token" content="<?= htmlspecialchars(\Keel\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
 <meta name="keel-authenticated" content="<?= $isAuthenticated ? '1' : '0' ?>">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -114,21 +86,7 @@ $socialImage = $appUrl !== '' ? $appUrl . '/images/brand/keel.png' : '/images/br
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <title><?= htmlspecialchars($resolvedTitle, ENT_QUOTES, 'UTF-8') ?></title>
-<?php if ($ui === 'deck'): ?>
-<?php
-// deck.js alone: the theme switch and back-to-top fallback are all a converted view uses so far.
-// Composer publishes these files into public_html/deck (see extra.deck in composer.json).
-\EchoDial\Deck\Deck::configure([
-	'base' => '/deck',
-	'root' => dirname(__DIR__, 2) . '/public_html',
-	'extras' => false,
-]);
-$publicAsset = static fn (string $path): string => $path . '?v=' . (int) @filemtime(dirname(__DIR__, 2) . '/public_html' . $path);
-?>
 <?= \EchoDial\Deck\Deck::head() ?>
 <link rel="stylesheet" href="<?= htmlspecialchars($publicAsset('/css/keel.css'), ENT_QUOTES, 'UTF-8') ?>">
 <script src="<?= htmlspecialchars($publicAsset('/js/keel.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
 <noscript><style>[data-deck-theme] { display: none; }</style></noscript>
-<?php else: ?>
-<?= \Keel\Core\Vite::assets(['resources/js/app.js']) ?>
-<?php endif; ?>

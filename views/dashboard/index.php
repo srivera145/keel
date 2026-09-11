@@ -1,21 +1,34 @@
+<?php
+use EchoDial\Deck\Deck;
+use Keel\Core\Csrf;
+use Keel\Core\Theme;
+?>
 <!DOCTYPE html>
-<html lang="en"<?= \Keel\Core\Theme::htmlAttribute() ?>>
+<html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(mode: Theme::serverPreference()) ?>>
 <head>
 <?php require __DIR__ . '/../partials/head.php'; ?>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="max-w-3xl mx-auto px-4 py-10">
-        <div class="flex items-center justify-between mb-8">
-            <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
+<body>
+    <span id="top" tabindex="-1"></span>
+
+    <main class="container settings-page stack stack-6" style="--container: 48rem">
+        <header class="bar">
+            <h1 class="h2">Dashboard</h1>
+            <?php $themeToggleClass = 'push'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
             <form method="POST" action="/logout">
-                <?= \Keel\Core\Csrf::field() ?>
-                <button type="submit" class="text-sm text-gray-500 hover:text-gray-900">Sign out</button>
+                <?= Csrf::field() ?>
+                <button type="submit" class="btn btn-sm">Sign out</button>
             </form>
-        </div>
-        <div class="card rounded-xl">
-            <p class="text-sm text-gray-500">Signed in as</p>
-            <p class="text-base font-medium text-gray-900"><?= htmlspecialchars($user['email'] ?? '') ?></p>
-        </div>
-    </div>
+        </header>
+
+        <section class="card">
+            <div class="card-body">
+                <div class="stat">
+                    <dt class="stat-label">Signed in as</dt>
+                    <dd class="fw-semi"><?= htmlspecialchars($user['email'] ?? '') ?></dd>
+                </div>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

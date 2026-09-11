@@ -1,10 +1,4 @@
 /vendor
-/node_modules
-/public_html/assets/*
-!/public_html/assets/brand/
-/public_html/assets/brand/*
-!/public_html/assets/brand/*.png
-/public_html/hot
 /public_html/deck/
 public_html/uploads/*
 !public_html/uploads/.gitkeep

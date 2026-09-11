@@ -2,9 +2,9 @@
  *
  * Deck's [data-deck-theme] button and Deck.theme() save the choice to
  * localStorage only. A signed-in Keel user's theme also lives on the server
- * (users.theme_preference, POST /settings/theme), so it follows them to other
- * devices and to pages that are still on Tailwind. Deck fires no event when the
- * theme changes, so this watches the attribute Deck writes.
+ * (users.theme_preference, POST /settings/theme), so it follows them to their
+ * other devices. Deck fires no event when the theme changes, so this watches
+ * the attribute Deck writes.
  */
 (() => {
 	const root = document.documentElement;
@@ -35,4 +35,46 @@
 			// Keep the local choice even if saving it fails.
 		});
 	}).observe(root, { attributes: true, attributeFilter: ['data-theme'], attributeOldValue: true });
+})();
+
+/* Confirmation before a destructive form posts.
+ *
+ * Deck styles .modal as a native <dialog> and says to open it with showModal(), but ships
+ * no wiring for one: drawers get data-deck-drawer in deck-extras.js, modals get nothing.
+ * A form carrying data-confirm="<dialog id>" asks first when JavaScript is available. With
+ * scripts off the form posts straight through, so the action still works — it just loses
+ * the confirmation step.
+ */
+(() => {
+	document.addEventListener('submit', (event) => {
+		const form = event.target.closest('form[data-confirm]');
+
+		if (!form || form.dataset.confirmed === 'true') {
+			return;
+		}
+
+		const dialog = document.getElementById(form.dataset.confirm);
+
+		if (!dialog || typeof dialog.showModal !== 'function') {
+			return;
+		}
+
+		event.preventDefault();
+		dialog.showModal();
+	});
+
+	document.addEventListener('click', (event) => {
+		event.target.closest('[data-modal-close]')?.closest('dialog')?.close();
+
+		const confirmer = event.target.closest('[data-confirm-submit]');
+		const form = confirmer && document.getElementById(confirmer.dataset.confirmSubmit);
+
+		if (!form) {
+			return;
+		}
+
+		form.dataset.confirmed = 'true';
+		confirmer.closest('dialog')?.close();
+		form.requestSubmit();
+	});
 })();

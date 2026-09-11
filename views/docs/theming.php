@@ -1,39 +1,30 @@
-<div class="space-y-6 text-sm leading-7 text-[var(--color-text-muted)]">
-    <section>
-        <h2 class="mb-2 text-lg font-semibold text-[var(--color-text-strong)]">Design tokens</h2>
-        <p>Core tokens live in <code>resources/css/app.css</code> under <code>:root</code> and <code>[data-theme="light"]</code>.</p>
-        <pre class="overflow-x-auto rounded-xl bg-[var(--color-surface-muted)] p-4 text-xs text-[var(--color-text-strong)]"><code>--color-brand
---color-brand-hover
---color-brand-contrast
---color-surface
---color-surface-hover
---color-surface-muted
---color-text
---color-text-muted
---color-text-strong
---color-card-bg
---color-card-border
---color-input-border</code></pre>
-    </section>
+<div class="prose">
+    <h2>One number</h2>
+    <p>Deck derives every brand colour from <code>--hue-brand</code>, a number from 0 to 360. Keel sets its own in <code>public_html/css/keel.css</code>:</p>
+    <pre><code>@layer app.base {
+  :root { --hue-brand: 38; }
+}</code></pre>
+    <p>38 is Keel's orange, <code>#ff6b3d</code>, expressed as a hue. Change it and the buttons, links, focus rings, badges and charts all follow, with no rebuild and no second stylesheet.</p>
 
-    <section>
-        <h2 class="mb-2 text-lg font-semibold text-[var(--color-text-strong)]">Component layer</h2>
-        <p><code>resources/css/components.css</code> maps components to tokenized styles:</p>
-        <ul class="list-disc space-y-1 pl-5">
-            <li><code>.btn</code>, <code>.btn-primary</code>, <code>.btn-secondary</code>, <code>.btn-danger</code></li>
-            <li><code>.card</code>, <code>.badge</code>, <code>.alert</code>, <code>.form-input</code></li>
-            <li><code>.table</code>, <code>.pagination</code>, <code>.modal</code>, <code>.empty-state</code></li>
-        </ul>
-    </section>
+    <h2>Per-tenant branding</h2>
+    <p>An organization carries <code>brand_hue</code>. The view hands it to Deck on the <code>&lt;html&gt;</code> tag, where an inline style beats every layer:</p>
+    <pre><code>&lt;html &lt;?= Deck::htmlAttributes(lang: 'en') ?&gt; &lt;?= Deck::theme(hue: $brandHue, mode: Theme::serverPreference()) ?&gt;&gt;</code></pre>
+    <p>Two tenants on the same deploy get different palettes from that one attribute. It has to be on <code>&lt;html&gt;</code>: Deck computes its brand ramp once on <code>:root</code>, so setting <code>--hue-brand</code> on a section or a card changes nothing below it.</p>
 
-    <section>
-        <h2 class="mb-2 text-lg font-semibold text-[var(--color-text-strong)]">Theme toggle and persistence</h2>
-        <ul class="list-disc space-y-1 pl-5">
-            <li>Use <code>data-theme-toggle</code> buttons with <code>data-theme-toggle-icon</code> spans.</li>
-            <li><code>resources/js/components/theme-toggle.js</code> updates <code>data-theme</code> on <code>&lt;html&gt;</code>.</li>
-            <li>Unauthenticated users persist preference in <code>localStorage</code> key <code>keel-theme</code>.</li>
-            <li>Authenticated users are persisted server-side via <code>POST /settings/theme</code>.</li>
-            <li><code>Theme::htmlAttribute()</code> emits the server preference into the initial HTML tag.</li>
-        </ul>
-    </section>
+    <h2>Keel's own CSS</h2>
+    <p>Deck ships in cascade layers and leaves four of them empty for the application: <code>app.base</code>, <code>app.components</code>, <code>app.pages</code> and <code>app.overrides</code>. Everything Keel adds lives in <code>public_html/css/keel.css</code> inside those layers, so it beats Deck with no <code>!important</code> and no specificity games.</p>
+    <ul>
+        <li><code>app.base</code>: the brand hue, and a <code>[hidden]</code> rule Deck's reset leaves out.</li>
+        <li><code>app.components</code>: <code>.when-light</code> and <code>.when-dark</code>, <code>.table-empty</code>, <code>.brand-logo</code>, <code>.hue-swatch</code>, <code>.otp-input</code>.</li>
+        <li><code>app.pages</code>: <code>.settings-page</code>, <code>.stage</code>, and the docs rail.</li>
+    </ul>
+    <p>Never edit <code>public_html/deck/</code>. Composer republishes it on every install.</p>
+
+    <h2>Light and dark</h2>
+    <ul>
+        <li>Deck's colours are <code>light-dark()</code> pairs driven by <code>color-scheme</code>. <code>data-theme</code> on <code>&lt;html&gt;</code> forces one or the other.</li>
+        <li><code>views/partials/theme-toggle.php</code> renders Deck's <code>[data-deck-theme]</code> button. The moon and sun swap through <code>.when-light</code> and <code>.when-dark</code>, because Deck exposes no state of its own on the button.</li>
+        <li><code>public_html/js/keel.js</code> watches the attribute and posts to <code>/settings/theme</code>, so a signed-in user's choice follows them to another device.</li>
+        <li>A short script in <code>views/partials/head.php</code> applies the saved theme before the first paint, which <code>deck.js</code> alone does not do.</li>
+    </ul>
 </div>

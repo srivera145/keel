@@ -45,12 +45,8 @@ jobs:
           extensions: pdo, pdo_mysql, mbstring, zip
           coverage: none
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
+      # Composer installs Deck and publishes its stylesheet, icon sprite and scripts into
+      # public_html/deck. There is no front-end build step to run.
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
@@ -81,11 +77,6 @@ jobs:
 
       - name: Run SQL migrations
         run: php database/migrate.php
-
-      - name: Build frontend assets
-        run: |
-          npm install
-          npm run build
 
       - name: Run Unit tests
         run: ./vendor/bin/phpunit --testsuite Unit

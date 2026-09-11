@@ -6,11 +6,12 @@ Thanks for contributing.
 
 Use the setup in [README.md](README.md), especially:
 
-1. Install Composer and npm dependencies.
+1. Install Composer dependencies.
 2. Configure `.env`.
 3. Follow the XAMPP `keel.local` virtual-host steps.
 4. Run migrations.
-5. Start the Vite pipeline.
+
+There is no front-end build step. `composer install` publishes Deck's stylesheet, icon sprite and scripts into `public_html/deck/`.
 
 Docker is available as an optional contributor path in the README, but XAMPP + `keel.local` is still the primary workflow used by this repository.
 
@@ -23,38 +24,38 @@ Keel keeps application code intentionally simple and explicit.
 3. Keep views as plain PHP files in `views/` with no templating engine.
 4. Follow PSR-4 under the `Keel\` namespace as configured in `composer.json`.
 
-## UI component classes
+## UI components
 
-Use shared component classes from `resources/css/components.css` instead of re-deriving long utility strings in views.
-
-Re-theme cloned projects by editing the `:root` token block in `resources/css/app.css`. Component classes and Tailwind semantic utilities resolve through those CSS variables, so color changes do not require editing views or rebuilding config.
+Views are built from [Deck](https://get-deck.dev)'s components. Reach for a component before composing utilities: if a view ends up with a stack of them, the component either exists already or belongs in Keel's own layer.
 
 1. Buttons:
-`btn` base with variants `btn-primary`, `btn-secondary`, `btn-danger`.
-
-Size scale (compose with variants):
-`btn-sm`, `btn-md`, `btn-lg`, `btn-xl`, `btn-2xl`.
-
-Use `btn-sm` for compact table actions, `btn-md` for default form and card actions, `btn-lg` and above for prominent marketing CTAs.
-2. Cards:
-`card` for standard panel containers.
-3. Badges:
-`badge` base, `badge-neutral` and `badge-success` for status/role pills.
-
-Badge sizes:
-`badge-sm` for dense rows and `badge-lg` for more prominent status chips.
-4. Alerts:
-`alert` base, `alert-error`, and `alert-success` for feedback messages.
-5. Forms:
-`form-label` and `form-input` for common label/input treatment.
-6. Tables and pagination:
-`table` for list/table structure, plus `pagination`, `pagination-links`, and `pagination-link` for paged views.
+`btn` base with variants `btn-primary`, `btn-danger`, `btn-ghost`, `btn-outline`, `btn-soft`. Sizes are `btn-sm` and `btn-lg`; `btn-block` fills its container. Use exactly one `btn-primary` per screen.
+2. Surfaces:
+`card` with `card-header`, `card-body`, `card-footer`, and `card-title` for the heading.
+3. Badges and alerts:
+`badge` with `badge-good`, `badge-warn`, `badge-bad`, `badge-brand`. `alert` with `alert-good`, `alert-warn`, `alert-bad`, `alert-info`, plus `alert-title` and `alert-body`.
+4. Forms:
+`field` wrapping a `label` and an `input`, `select` or `textarea`. `help` for a hint, `error` for a validation message.
+5. Tables:
+`table-wrap` around `table`. Add `table-stack` for a short table that should restack on a phone; leave it off a dense log, where stacking is unreadable. `table-empty` is Keel's own class for a full-width empty-state row.
+6. Layout:
+`container`, `stack` with a step (`stack stack-6`), `cluster`, `bar` with `push`, `split` for content plus a rail, and `grid` with `--min` when the default column floor strands a card.
 7. Empty states:
-`empty-state`, `empty-state-icon`, `empty-state-title`, and `empty-state-text` for intentional zero-row/table states.
-8. Shared behavior helpers:
-Use `data-tabs` + `data-tab-target` + `data-tab-panel` for reusable tabs, and `data-modal-open` + `data-modal-close` with `modal`/`modal-panel` for confirmation dialogs.
+`empty` with `empty-art` and `empty-title`.
 
-If a screen needs a visual treatment these classes do not cover, compose from these first and only add local utilities for the difference.
+### Keel's own CSS
+
+Anything Deck does not cover goes in `public_html/css/keel.css`, inside the `app.base`, `app.components` and `app.pages` layers Deck reserves. A rule in those layers beats Deck without `!important`. Re-theme a cloned project by changing `--hue-brand` in `app.base`; see the Theming page in the docs.
+
+Never edit `public_html/deck/` — Composer republishes it on every install.
+
+### Shared partials and behaviour
+
+- `views/partials/head.php` emits Deck's tags, Keel's CSS and JS, and the pre-paint theme script.
+- `views/partials/site-nav.php`, `views/partials/theme-toggle.php` and `views/partials/back-to-top.php` are shared chrome.
+- `data-deck-theme` on a button flips the theme; `public_html/js/keel.js` saves it for signed-in users.
+- `data-confirm="<dialog id>"` on a form asks for confirmation through Deck's `modal` before posting, and posts straight through when JavaScript is off.
+- Set `$deckExtras = true` in a view that needs `deck-extras.js` (the copy button, drawer or carousel).
 
 ## Running tests before a PR
 

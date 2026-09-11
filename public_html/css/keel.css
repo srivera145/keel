@@ -13,7 +13,7 @@
 
 @layer app.base {
   :root {
-    /* Keel's Tailwind brand colour was #ff6b3d, which is oklch(70.5% .191 37.5).
+    /* Keel's brand colour, #ff6b3d, is oklch(70.5% .191 37.5) — hue 38.
        A tenant's organizations.brand_hue replaces this with an inline style on
        <html>, which outranks every layer. */
     --hue-brand: 38;
@@ -53,27 +53,93 @@
     .table-stack .table-empty::before { content: none; }
   }
 
-  /* [data-deck-theme] flips the theme but exposes no state, so the button
-     cannot show which way it will switch. The icon follows the theme in
-     effect: the attribute when one is set, the OS preference when not. */
-  .theme-toggle .icon-to-light { display: none; }
-  :root[data-theme="dark"] .theme-toggle .icon-to-dark { display: none; }
-  :root[data-theme="dark"] .theme-toggle .icon-to-light { display: block; }
+  /* Two-state marks: the moon and sun in the theme switch, and the two logo
+     files. [data-deck-theme] flips the theme but exposes no state, so the mark
+     that suits the theme in effect is the one shown — the attribute when one is
+     set, the OS preference when not. revert-layer hands display back to whatever
+     Deck's own layers set, which differs between an <svg> and an <img>. */
+  .when-dark { display: none; }
+  :root[data-theme="dark"] .when-light { display: none; }
+  :root[data-theme="dark"] .when-dark { display: revert-layer; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) .theme-toggle .icon-to-dark { display: none; }
-    :root:not([data-theme]) .theme-toggle .icon-to-light { display: block; }
+    :root:not([data-theme]) .when-light { display: none; }
+    :root:not([data-theme]) .when-dark { display: revert-layer; }
+  }
+
+  /* The theme switch on a page with no header to hang it on: errors, billing
+     results, sign-in. Keel used to inject a floating switch on every page that
+     had none, and this is the same corner. */
+  .theme-toggle-floating {
+    position: fixed;
+    inset-block-start: var(--space-4);
+    inset-inline-end: var(--space-4);
+    z-index: var(--z-nav);
+    background: var(--surface);
+    border-color: var(--line);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* The wordmark and the app icon are raster files far larger than they render,
+     so the height is set here rather than per view. */
+  .brand-logo {
+    block-size: 2.5rem;
+    inline-size: auto;
+    object-fit: contain;
+  }
+
+  /* A tenant's brand hue, as a dot beside its name. Deck computes its brand ramp once on
+     :root, so a page listing several tenants cannot preview each one by setting
+     --hue-brand on a row. This rebuilds just the fill from the lightness and chroma Deck
+     uses for --brand-600: the one place Keel repeats a Deck value instead of reading it. */
+  .hue-swatch {
+    display: inline-block;
+    inline-size: .75rem;
+    block-size: .75rem;
+    border-radius: var(--r-full);
+    background: oklch(51.6% .118 var(--hue, 196));
+    vertical-align: -.05em;
+  }
+
+  /* A six-digit code, spaced so it reads as digits rather than a word. */
+  .otp-input {
+    text-align: center;
+    letter-spacing: .42em;
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer app.pages {
-  /* Keel's settings pages: a 64rem column (Tailwind's max-w-5xl) beside a
-     24rem rail. Deck's container steps are 40, 56, 76 and 90rem, and .split's
-     rail is a fixed width, so both are set once here rather than per view.
-     .section is page rhythm for marketing pages (about 6rem at desktop); an
-     app screen wants the 2.5rem the Tailwind view had. */
+  /* Keel's settings pages: a 64rem column beside a 24rem rail. Deck's container
+     steps are 40, 56, 76 and 90rem and .split's rail is a fixed width, so both
+     are set once here rather than per view. .section is page rhythm for
+     marketing pages (about 6rem at desktop); an app screen wants 2.5rem. */
   .settings-page {
     --container: 64rem;
     --rail: 24rem;
     padding-block: var(--space-10);
   }
+
+  /* The docs rail: a column beside the article, and one scrollable row above it on a
+     phone. Deck's .sidebar is always a column and .scroller is its row equivalent, so the
+     switch is a media query rather than the JavaScript toggle the previous layout used.
+     Group headings drop out of the row, where the labels have to carry themselves. */
+  @media (max-width: 63.999rem) {
+    .docs-sections .sidebar {
+      flex-direction: row;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .docs-sections .sidebar-group { display: none; }
+    .docs-sections .sidebar-link { white-space: nowrap; }
+  }
+
+  /* One card centred in the viewport: errors, billing results, sign-in,
+     onboarding. --stage-width widens it for a page that needs more room. */
+  .stage {
+    display: grid;
+    place-items: center;
+    min-block-size: 100dvh;
+    padding-block: var(--space-10);
+  }
+  .stage > * { inline-size: min(100%, var(--stage-width, 34rem)); }
 }

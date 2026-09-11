@@ -5,13 +5,13 @@
 
 # Keel
 
-Santos Rivera's PHP starter kit. A consistent foundation for new SaaS projects: custom MVC, OTP + Magic Link auth (no passwords, ever), a mailer, and Composer + npm/Vite wired together.
+Santos Rivera's PHP starter kit. A consistent foundation for new SaaS projects: custom MVC, OTP + Magic Link auth (no passwords, ever), a mailer, and a complete interface built on Deck — installed by Composer, with no build step.
 
 ## Stack
 
 - PHP 8.2, custom MVC (no framework dependency)
 - MySQL via PDO
-- Tailwind CSS + Vite (npm)
+- [Deck](https://get-deck.dev) CSS, published by Composer. No npm, no bundler, no build step.
 - Vanilla JS
 - PHPMailer (SMTP + log driver)
 - Stripe Checkout + Billing Portal for subscription billing
@@ -27,11 +27,13 @@ Santos Rivera's PHP starter kit. A consistent foundation for new SaaS projects: 
 ```
 public_html/       Web root. Only this folder is exposed by the server.
   index.php         Front controller — every request enters here.
-  assets/           Built CSS/JS output (npm run build). Git-ignored.
+  css/keel.css      Keel's own CSS, in the app.* layers Deck reserves.
+  js/keel.js        Theme persistence and confirmation dialogs. No build step.
+  deck/             Deck, published by `composer install`. Git-ignored.
   uploads/           User-uploaded files.
 src/
   Core/              Framework internals: Router, Request, Response, Database,
-                                 Session, View, Mailer, Vite, Env, Controller, Middleware,
+                                 Session, View, Mailer, Env, Controller, Middleware,
                                  Csrf, RateLimiter, ErrorHandler, Storage.
   App/
     Controllers/      Your route handlers.
@@ -44,8 +46,7 @@ views/               Plain PHP templates. No templating engine —
                       views/partials/head.php + one file per page, same as
                       the pattern you've used across keel/Mise/ShiftDeduct.
 resources/
-  css/app.css        Tailwind entry point.
-  js/app.js           JS entry point.
+  images/            Brand source images.
 database/
    migrations/         Plain .sql files, run with `php database/migrate.php`.
    migrate.php         CLI runner for pending SQL migrations.
@@ -59,8 +60,8 @@ storage/app/          Private uploaded files, not web-accessible.
 1. **Install dependencies**
    ```
    composer install
-   npm install
    ```
+   This also publishes Deck's stylesheet, icon sprite and scripts into `public_html/deck/`. There is nothing else to install and nothing to compile.
 
 2. **Environment**
    ```
@@ -180,13 +181,11 @@ storage/app/          Private uploaded files, not web-accessible.
 
    `public_html/.htaccess` is already in the project — it rewrites any request that isn't a real file to `index.php`, which is what lets `/login`, `/dashboard`, etc. resolve through the router instead of 404ing.
 
-9. **Run the asset pipeline**
-   ```
-   npm run dev
-   ```
-   This starts the Vite dev server and writes `public_html/hot`, which the PHP `Vite` helper detects automatically to serve unbuilt assets with HMR — no code change needed to switch between dev and build. Stop the dev server and it cleans that file up on its own. Apache serves the PHP as usual at `http://keel.local`; Vite only serves the JS/CSS.
+9. **Front-end assets**
 
-   For production: `npm run build`, then just visit `http://keel.local` — the `Vite` helper reads `public_html/assets/.vite/manifest.json` automatically. No dev server needed.
+   There is no asset pipeline. `composer install` copies Deck into `public_html/deck/`, and `views/partials/head.php` emits the tags with `Deck::head()`. Keel's own CSS and JavaScript are served exactly as written from `public_html/css/keel.css` and `public_html/js/keel.js`.
+
+   Re-theme the whole app by changing `--hue-brand` in `public_html/css/keel.css`, or per tenant with `organizations.brand_hue`. Nothing is rebuilt either way. See the Theming page under `/docs`.
 
 ## Optional Docker setup (for contributors not using XAMPP)
 
@@ -202,7 +201,6 @@ XAMPP + `keel.local` remains the primary documented workflow. Docker is provided
 
    ```bash
    docker compose exec app composer install
-   docker compose exec app npm install
    ```
 
 3. Run migrations against the `db` service:
@@ -244,6 +242,7 @@ In Docker, app database host is wired to `db` in `docker-compose.yml`.
 - Organization owners and admins can invite teammates by email. Invite tokens are hashed at rest, single-use, and expiring.
 - Invite emails are queued for background delivery by `database/queue-work.php` so invite requests do not block HTTP responses.
 - `is_super_admin` is a manual database flag for the platform operator and is never self-assignable through the UI.
+- `organizations.brand_hue` holds a tenant's brand hue. The view passes it to `Deck::theme()` on the `<html>` tag, so two tenants get different palettes from the same deploy with no rebuild.
 
 ## Queue worker
 
@@ -310,7 +309,6 @@ The script is intentionally blocked outside local/dev/testing environments.
    - MySQL service
    - `composer install`
    - SQL migrations
-   - `npm install && npm run build`
    - PHPUnit
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and PR expectations.
@@ -318,9 +316,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and PR expectations.
 ## Adding a new project from this kit
 
 1. Copy the whole folder, rename it.
-2. Update `composer.json` (`name`), `package.json` (`name`), `.env` (`APP_NAME`, `APP_URL`, `DB_DATABASE`).
+2. Update `composer.json` (`name`) and `.env` (`APP_NAME`, `APP_URL`, `DB_DATABASE`).
 3. Add controllers to `src/App/Controllers/`, register routes in `routes/web.php`, add views under `views/`.
 4. Keep business logic in `src/App/Services/`, keep controllers thin — same separation you've used on keel and PulseIQ.
+5. Set your brand with `--hue-brand` in `public_html/css/keel.css` and swap the images in `resources/images/brand/`.
 
 ## Notes / things you might want to add per-project
 

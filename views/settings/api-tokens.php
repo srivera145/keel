@@ -1,124 +1,147 @@
 <?php
+use EchoDial\Deck\Deck;
+use Keel\Core\Csrf;
+use Keel\Core\Theme;
+
 $tokens = $tokens ?? [];
 $newToken = $newToken ?? null;
 $error = $error ?? null;
+// deck-extras.js carries the copy button, and only a freshly created token needs it.
+$deckExtras = is_string($newToken) && $newToken !== '';
 ?>
 <!DOCTYPE html>
-<html lang="en"<?= \Keel\Core\Theme::htmlAttribute() ?>>
+<html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(mode: Theme::serverPreference()) ?>>
 <head>
 <?php require __DIR__ . '/../partials/head.php'; ?>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="mx-auto max-w-5xl px-4 py-10">
-        <div class="mb-8 flex items-center justify-between gap-4">
-            <div>
-                <p class="text-sm text-gray-500">Developer access</p>
-                <h1 class="text-3xl font-bold text-gray-900">API Tokens</h1>
+<body>
+    <span id="top" tabindex="-1"></span>
+
+    <main class="container settings-page stack stack-6">
+        <header class="bar">
+            <div class="stack stack-2">
+                <nav aria-label="Breadcrumb">
+                    <ol class="breadcrumb">
+                        <li><a href="/dashboard">Dashboard</a></li>
+                        <li><span aria-current="page">API tokens</span></li>
+                    </ol>
+                </nav>
+                <h1 class="h2">API Tokens</h1>
             </div>
-            <a href="/dashboard" class="text-sm text-gray-500 hover:text-gray-900">Back to dashboard</a>
-        </div>
+            <?php $themeToggleClass = 'push'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
+        </header>
 
         <?php if (is_string($newToken) && $newToken !== ''): ?>
-        <div class="alert mb-6 border-amber-300 bg-amber-50 p-4 text-amber-900">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <p class="text-sm font-semibold">Copy this token now. You will not be able to see it again.</p>
-                    <div id="new-token-value" class="mt-2 overflow-x-auto rounded border border-amber-200 bg-white px-3 py-2 font-mono text-sm"><?= htmlspecialchars($newToken) ?></div>
+        <div class="alert alert-warn">
+            <?= Deck::icon('alert-triangle') ?>
+            <div class="stack stack-2 grow">
+                <p class="alert-title">Copy this token now. You will not be able to see it again.</p>
+                <div class="copy">
+                    <code class="copy-value"><?= htmlspecialchars($newToken) ?></code>
+                    <button type="button" class="copy-btn" data-deck-copy>
+                        <span class="copy-idle"><?= Deck::icon('copy', 'icon icon-sm') ?> Copy</span>
+                        <span class="copy-done"><?= Deck::icon('check', 'icon icon-sm') ?> Copied</span>
+                    </button>
                 </div>
-                <button type="button" class="btn btn-sm border border-amber-300 bg-white text-amber-900 hover:bg-amber-100" data-copy-source="new-token-value" data-label-default="Copy token" data-label-success="Copied!" data-label-error="Copy failed">Copy token</button>
             </div>
         </div>
         <?php endif; ?>
 
         <?php if (is_string($error) && $error !== ''): ?>
-        <div class="alert alert-error mb-6 px-4 py-3"><?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-bad">
+            <?= Deck::icon('alert-circle') ?>
+            <p><?= htmlspecialchars($error) ?></p>
+        </div>
         <?php endif; ?>
 
-        <div class="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-            <div class="card">
-                <h2 class="text-lg font-semibold text-gray-900">Issued tokens</h2>
-                <div class="mt-4 overflow-x-auto rounded-xl border border-gray-200">
-                    <?php if ($tokens === []): ?>
-                    <div class="p-6">
-                        <div class="empty-state">
-                            <span class="empty-state-icon" aria-hidden="true">k</span>
-                            <p class="empty-state-title">No API tokens yet</p>
-                            <p class="empty-state-text">Create a token to authenticate scripts or integrations.</p>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    <?php if ($tokens !== []): ?>
-                    <table class="table">
+        <div class="split">
+            <section class="card" aria-labelledby="tokens-title">
+                <div class="card-header">
+                    <h2 id="tokens-title" class="card-title">Issued tokens</h2>
+                </div>
+                <div class="table-wrap" tabindex="0" role="region" aria-labelledby="tokens-title">
+                    <table class="table table-stack">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Abilities</th>
-                                <th>Last used</th>
-                                <th>Expires</th>
-                                <th class="text-right">Actions</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Abilities</th>
+                                <th scope="col">Last used</th>
+                                <th scope="col">Expires</th>
+                                <th scope="col" class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                    <?php foreach ($tokens as $token): ?>
-                    <tr>
-                        <td class="font-medium text-gray-900"><?= htmlspecialchars((string) $token['name']) ?></td>
-                        <td class="text-xs"><?= htmlspecialchars((string) $token['abilities']) ?></td>
-                        <td><?= htmlspecialchars((string) ($token['last_used_at'] ?? 'Never')) ?></td>
-                        <td><?= htmlspecialchars((string) ($token['expires_at'] ?? 'Never')) ?></td>
-                        <td class="text-right">
-                            <button
-                                type="button"
-                                class="btn btn-danger btn-sm"
-                                data-modal-open="revoke-token-modal-<?= (int) $token['id'] ?>"
-                            >
-                                Revoke
-                            </button>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                            <?php if ($tokens === []): ?>
+                            <tr>
+                                <td colspan="5" class="table-empty">
+                                    <div class="empty">
+                                        <span class="empty-art"><?= Deck::icon('lock') ?></span>
+                                        <p class="empty-title">No API tokens yet</p>
+                                        <p>Create a token to authenticate scripts or integrations.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+
+                            <?php foreach ($tokens as $token): ?>
+                            <tr>
+                                <td data-label="Name" class="fw-medium"><?= htmlspecialchars((string) $token['name']) ?></td>
+                                <td data-label="Abilities"><code><?= htmlspecialchars((string) $token['abilities']) ?></code></td>
+                                <td data-label="Last used" class="nums"><?= htmlspecialchars((string) ($token['last_used_at'] ?? 'Never')) ?></td>
+                                <td data-label="Expires" class="nums"><?= htmlspecialchars((string) ($token['expires_at'] ?? 'Never')) ?></td>
+                                <td data-label="Actions" class="text-end">
+                                    <form id="revoke-form-<?= (int) $token['id'] ?>" method="POST" action="/settings/api-tokens/<?= (int) $token['id'] ?>/revoke" data-confirm="revoke-token-<?= (int) $token['id'] ?>">
+                                        <?= Csrf::field() ?>
+                                        <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <?php endif; ?>
                 </div>
+            </section>
 
-                <?php foreach ($tokens as $token): ?>
-                <div id="revoke-token-modal-<?= (int) $token['id'] ?>" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="revoke-token-title-<?= (int) $token['id'] ?>">
-                    <div class="modal-panel" data-modal-panel>
-                        <h3 id="revoke-token-title-<?= (int) $token['id'] ?>" class="text-lg font-semibold text-gray-900">Revoke token?</h3>
-                        <p class="mt-2 text-sm text-gray-600">This will immediately disable <strong><?= htmlspecialchars((string) $token['name']) ?></strong>. Existing clients using it will fail authentication.</p>
-                        <div class="mt-5 flex justify-end gap-2">
-                            <button type="button" class="btn btn-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100" data-modal-close>Cancel</button>
-                            <form method="POST" action="/settings/api-tokens/<?= (int) $token['id'] ?>/revoke">
-                                <?= \Keel\Core\Csrf::field() ?>
-                                <button type="submit" class="btn btn-danger btn-md">Revoke token</button>
-                            </form>
-                        </div>
-                    </div>
+            <section class="card" aria-labelledby="create-title">
+                <div class="card-header">
+                    <h2 id="create-title" class="card-title">Create token</h2>
                 </div>
-                <?php endforeach; ?>
-            </div>
-
-            <div class="card">
-                <h2 class="text-lg font-semibold text-gray-900">Create token</h2>
-                <form method="POST" action="/settings/api-tokens" class="mt-4 space-y-4">
-                    <?= \Keel\Core\Csrf::field() ?>
-                    <div>
-                        <label class="form-label">Name</label>
-                        <input type="text" name="name" class="form-input" placeholder="CI integration" required>
+                <form method="POST" action="/settings/api-tokens" class="card-body">
+                    <?= Csrf::field() ?>
+                    <div class="field">
+                        <label class="label" for="token-name">Name</label>
+                        <input type="text" id="token-name" name="name" class="input" placeholder="CI integration" required>
                     </div>
-                    <div>
-                        <label class="form-label">Abilities</label>
-                        <input type="text" name="abilities" value="*" class="form-input" placeholder="read,write">
+                    <div class="field">
+                        <label class="label" for="token-abilities">Abilities</label>
+                        <input type="text" id="token-abilities" name="abilities" value="*" class="input" placeholder="read,write">
+                        <p class="help">Comma-separated, or <code>*</code> for everything.</p>
                     </div>
-                    <div>
-                        <label class="form-label">Expires at (optional)</label>
-                        <input type="datetime-local" name="expires_at" class="form-input">
+                    <div class="field">
+                        <label class="label" for="token-expires">Expires at <span class="optional">optional</span></label>
+                        <input type="datetime-local" id="token-expires" name="expires_at" class="input">
                     </div>
-                    <button type="submit" class="btn btn-secondary btn-md w-full">Create token</button>
+                    <button type="submit" class="btn btn-primary btn-block">Create token</button>
                 </form>
-            </div>
+            </section>
         </div>
-    </div>
+    </main>
+
+    <?php foreach ($tokens as $token): ?>
+    <dialog class="modal" id="revoke-token-<?= (int) $token['id'] ?>" aria-labelledby="revoke-title-<?= (int) $token['id'] ?>">
+        <div class="modal-header">
+            <h2 class="modal-title" id="revoke-title-<?= (int) $token['id'] ?>">Revoke token?</h2>
+        </div>
+        <div class="modal-body">
+            <p>This will immediately disable <strong><?= htmlspecialchars((string) $token['name']) ?></strong>. Existing clients using it will fail authentication.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" data-modal-close>Cancel</button>
+            <button type="button" class="btn btn-danger" data-confirm-submit="revoke-form-<?= (int) $token['id'] ?>">Revoke token</button>
+        </div>
+    </dialog>
+    <?php endforeach; ?>
+
+    <?php require __DIR__ . '/../partials/back-to-top.php'; ?>
 </body>
 </html>

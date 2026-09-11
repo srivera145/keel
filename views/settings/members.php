@@ -6,7 +6,6 @@ use Keel\Core\Theme;
 $members = $members ?? [];
 $pendingInvites = $pendingInvites ?? [];
 $brandHue = isset($organization['brand_hue']) ? (int) $organization['brand_hue'] : null;
-$ui = 'deck';
 ?>
 <!DOCTYPE html>
 <html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(hue: $brandHue, mode: Theme::serverPreference()) ?>>
@@ -27,10 +26,7 @@ $ui = 'deck';
                 </nav>
                 <h1 class="h2"><?= htmlspecialchars((string) ($organization['name'] ?? 'Organization')) ?></h1>
             </div>
-            <button type="button" class="btn btn-icon btn-ghost theme-toggle push" data-deck-theme aria-label="Switch between light and dark theme">
-                <?= Deck::icon('moon', 'icon icon-to-dark') ?>
-                <?= Deck::icon('sun', 'icon icon-to-light') ?>
-            </button>
+            <?php $themeToggleClass = 'push'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
         </header>
 
         <?php if (!empty($_GET['status']) && $_GET['status'] === 'invite_sent'): ?>
@@ -155,6 +151,6 @@ $ui = 'deck';
         </div>
     </main>
 
-    <a class="back-to-top" href="#top" aria-label="Back to top"><?= Deck::icon('chevron-up') ?></a>
+    <?php require __DIR__ . '/../partials/back-to-top.php'; ?>
 </body>
 </html>

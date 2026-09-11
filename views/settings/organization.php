@@ -1,38 +1,55 @@
+<?php
+use EchoDial\Deck\Deck;
+use Keel\Core\Theme;
+
+$brandHue = isset($organization['brand_hue']) ? (int) $organization['brand_hue'] : null;
+?>
 <!DOCTYPE html>
-<html lang="en"<?= \Keel\Core\Theme::htmlAttribute() ?>>
+<html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(hue: $brandHue, mode: Theme::serverPreference()) ?>>
 <head>
 <?php require __DIR__ . '/../partials/head.php'; ?>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="mx-auto max-w-4xl px-4 py-10">
-        <div class="mb-8 flex items-center justify-between gap-4">
-            <div>
-                <p class="text-sm text-gray-500">Organization settings</p>
-                <h1 class="text-3xl font-bold text-gray-900"><?= htmlspecialchars((string) ($organization['name'] ?? 'Organization')) ?></h1>
-            </div>
-            <a href="/dashboard" class="text-sm text-gray-500 hover:text-gray-900">Back to dashboard</a>
-        </div>
+<body>
+    <span id="top" tabindex="-1"></span>
 
-        <div class="card">
-            <dl class="grid gap-6 sm:grid-cols-2">
-                <div>
-                    <dt class="text-sm text-gray-500">Organization name</dt>
-                    <dd class="mt-1 text-base font-medium text-gray-900"><?= htmlspecialchars((string) ($organization['name'] ?? '')) ?></dd>
-                </div>
-                <div>
-                    <dt class="text-sm text-gray-500">Slug</dt>
-                    <dd class="mt-1 text-base font-medium text-gray-900"><?= htmlspecialchars((string) ($organization['slug'] ?? '')) ?></dd>
-                </div>
-                <div>
-                    <dt class="text-sm text-gray-500">Your role</dt>
-                    <dd class="mt-1 text-base font-medium text-gray-900"><?= htmlspecialchars((string) ($user['role'] ?? '')) ?></dd>
-                </div>
-                <div>
-                    <dt class="text-sm text-gray-500">Members</dt>
-                    <dd class="mt-1 text-base font-medium text-gray-900"><a href="/settings/members" class="text-gray-900 underline">Manage members</a></dd>
-                </div>
-            </dl>
-        </div>
-    </div>
+    <main class="container settings-page stack stack-6">
+        <header class="bar">
+            <div class="stack stack-2">
+                <nav aria-label="Breadcrumb">
+                    <ol class="breadcrumb">
+                        <li><a href="/dashboard">Dashboard</a></li>
+                        <li><span aria-current="page">Organization settings</span></li>
+                    </ol>
+                </nav>
+                <h1 class="h2"><?= htmlspecialchars((string) ($organization['name'] ?? 'Organization')) ?></h1>
+            </div>
+            <?php $themeToggleClass = 'push'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
+        </header>
+
+        <section class="card">
+            <div class="card-body">
+                <dl class="grid" style="--min: 14rem">
+                    <div class="stat">
+                        <dt class="stat-label">Organization name</dt>
+                        <dd class="fw-semi"><?= htmlspecialchars((string) ($organization['name'] ?? '')) ?></dd>
+                    </div>
+                    <div class="stat">
+                        <dt class="stat-label">Slug</dt>
+                        <dd class="fw-semi mono"><?= htmlspecialchars((string) ($organization['slug'] ?? '')) ?></dd>
+                    </div>
+                    <div class="stat">
+                        <dt class="stat-label">Your role</dt>
+                        <dd><span class="badge badge-brand"><?= htmlspecialchars((string) ($user['role'] ?? '')) ?></span></dd>
+                    </div>
+                    <div class="stat">
+                        <dt class="stat-label">Members</dt>
+                        <dd><a href="/settings/members">Manage members</a></dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+    </main>
+
+    <?php require __DIR__ . '/../partials/back-to-top.php'; ?>
 </body>
 </html>
