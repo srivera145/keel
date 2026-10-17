@@ -1,6 +1,7 @@
 # KEEL OS — build
 CC      ?= cc
-CFLAGS  ?= -O3 -march=native -ffast-math -fno-math-errno
+MARCH   ?= native
+CFLAGS  ?= -O3 -march=$(MARCH) -ffast-math -fno-math-errno
 CFLAGS  += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-format-truncation
 LDLIBS  := -lm -lpthread
 
@@ -25,11 +26,14 @@ build/obj/%.o: src/%.c src/*.h | build/obj
 build/obj:
 	mkdir -p $@
 
-# Static build for running as PID 1 / on a bare framebuffer device.
-static: CFLAGS += -DKEEL_NO_X11 -static
-static: LDLIBS := -lm -lpthread
+# Static, portable build for running as PID 1 on a bare framebuffer device.
 static: build/obj
-	$(CC) $(CFLAGS) -o build/keelos-static $(SRC) $(LDLIBS)
+	$(CC) -O3 -march=x86-64-v2 -ffast-math -fno-math-errno -std=gnu11 -DKEEL_NO_X11 -static \
+	    -o build/keelos-static $(SRC) -lm -lpthread
+
+# Bootable initramfs: KEEL as /init on any Linux kernel with a framebuffer.
+image: static
+	./tools/mkimage.sh
 
 test: build/keelos
 	./tests/run_tests.sh
@@ -37,4 +41,4 @@ test: build/keelos
 clean:
 	rm -rf build
 
-.PHONY: all static test clean
+.PHONY: all static image test clean

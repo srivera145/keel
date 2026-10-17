@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/mount.h>
+#include <sys/reboot.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -138,7 +139,7 @@ static struct { int state; long slot; } buf_st[NBUF];
 static pthread_mutex_t qm = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t qcv = PTHREAD_COND_INITIALIZER;
 static pthread_t presenter;
-static int pipelined, presenter_quit;
+static int pipelined, presenter_quit, debug_present;
 static double t_base;
 static long last_slot = -1, static_slot = -1;
 static float *intervals;
@@ -172,6 +173,7 @@ static void *presenter_main(void *arg) {
         pthread_mutex_unlock(&qm);
         if (pick >= 0) {
             P->present(pick);
+            if (debug_present && (nint % 60) == 0) fprintf(stderr, "presenter: %ld frames shown, %ld missed\n", nint, repeats);
             double t = now_sec();
             pthread_mutex_lock(&qm);
             /* the buffer now on screen stays reserved until the next one replaces it */
@@ -377,10 +379,14 @@ static int report(void) {
 
 /* ---------------- init (PID 1) ---------------- */
 static void as_init(void) {
+    mkdir("/proc", 0755); mkdir("/sys", 0755); mkdir("/dev", 0755); mkdir("/tmp", 01777);
     mount("proc", "/proc", "proc", 0, NULL);
     mount("sysfs", "/sys", "sysfs", 0, NULL);
     mount("devtmpfs", "/dev", "devtmpfs", 0, NULL);
+    mount("tmpfs", "/tmp", "tmpfs", 0, NULL);
     setenv("PATH", "/bin:/sbin:/usr/bin", 0);
+    setenv("KEEL_FONT_DIR", "/usr/share/fonts", 0);
+    printf("KEEL OS init: pid 1, filesystems mounted\n");
 }
 
 static void on_signal(int s) { (void)s; app.quit = 1; }
@@ -407,6 +413,7 @@ int main(int argc, char **argv) {
     }
     if (getpid() == 1) { as_init(); want = 2; }
     slowlog = getenv("KEEL_SLOWLOG") != NULL;
+    debug_present = getenv("KEEL_DEBUG") != NULL;
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
 
@@ -448,6 +455,7 @@ int main(int argc, char **argv) {
     audio_shutdown();
     P->shutdown();
     jobs_shutdown();
+    if (getpid() == 1) { sync(); reboot(RB_POWER_OFF); for (;;) pause(); } /* PID 1 must never exit */
     if (check_failures) { printf("%d blank-frame check(s) failed\n", check_failures); return 2; }
     if (assert_budget && !budget_ok) return 3;
     return 0;
