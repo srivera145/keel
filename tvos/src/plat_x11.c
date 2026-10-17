@@ -14,14 +14,15 @@ const Platform plat_x11 = {"x11", NULL, NULL, NULL, NULL, NULL};
 static Display *dpy;
 static Window win;
 static GC gc;
-static int W, H, use_shm, completion_type;
-static XImage *img[2];
-static XShmSegmentInfo shm[2];
-static int busy[2], cur;
+static int W, H, use_shm;
+static XImage *img[NBUF];
+static XShmSegmentInfo shm[NBUF];
 static Atom wm_delete;
 
 static int x11_init(int w, int h) {
     W = w; H = h;
+    /* The presenter thread and the input poller share the connection. */
+    XInitThreads();
     dpy = XOpenDisplay(NULL);
     if (!dpy) return 0;
     int scr = DefaultScreen(dpy);
@@ -53,8 +54,7 @@ static int x11_init(int w, int h) {
     XMapWindow(dpy, win);
     gc = XCreateGC(dpy, win, 0, NULL);
     use_shm = XShmQueryExtension(dpy) && !getenv("KEEL_NO_SHM");
-    completion_type = XShmGetEventBase(dpy) + ShmCompletion;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < NBUF; i++) {
         if (use_shm) {
             img[i] = XShmCreateImage(dpy, vis, depth, ZPixmap, NULL, &shm[i], w, h);
             shm[i].shmid = shmget(IPC_PRIVATE, (size_t)img[i]->bytes_per_line * h, IPC_CREAT | 0600);
@@ -72,45 +72,22 @@ static int x11_init(int w, int h) {
     return 1;
 }
 
-/* Buffers in flight, oldest first: completions arrive in order. */
-static int inflight[2], ninflight;
-
-static void on_completion(void) {
-    if (!ninflight) return;
-    busy[inflight[0]] = 0;
-    inflight[0] = inflight[1];
-    ninflight--;
-}
-static Bool is_completion(Display *d, XEvent *e, XPointer arg) {
-    (void)d; (void)arg;
-    return e->type == completion_type;
+static uint32_t *x11_buffer(int i, int *stride) {
+    *stride = img[i]->bytes_per_line / 4;
+    return (uint32_t *)img[i]->data;
 }
 
-static uint32_t *x11_acquire(int *stride) {
-    while (use_shm && busy[cur]) {
-        XEvent e;
-        XIfEvent(dpy, &e, is_completion, NULL);
-        on_completion();
-    }
-    *stride = img[cur]->bytes_per_line / 4;
-    return (uint32_t *)img[cur]->data;
-}
-
-static void x11_present(void) {
-    if (use_shm) {
-        XShmPutImage(dpy, win, gc, img[cur], 0, 0, 0, 0, W, H, True);
-        busy[cur] = 1;
-        inflight[ninflight++] = cur;
-    } else XPutImage(dpy, win, gc, img[cur], 0, 0, 0, 0, W, H);
-    XFlush(dpy);
-    cur ^= 1;
+static void x11_present(int i) {
+    if (use_shm) XShmPutImage(dpy, win, gc, img[i], 0, 0, 0, 0, W, H, False);
+    else XPutImage(dpy, win, gc, img[i], 0, 0, 0, 0, W, H);
+    /* Round trip: once the server has processed the copy the buffer is free. */
+    XSync(dpy, False);
 }
 
 static int x11_poll(InputEvent *ev) {
     while (XPending(dpy)) {
         XEvent e;
         XNextEvent(dpy, &e);
-        if (e.type == completion_type) { on_completion(); continue; }
         if (e.type == ClientMessage && (Atom)e.xclient.data.l[0] == wm_delete) { ev->key = K_QUIT; return 1; }
         if (e.type != KeyPress) continue;
         char txt[8] = {0};
@@ -141,10 +118,10 @@ static int x11_poll(InputEvent *ev) {
 
 static void x11_shutdown(void) {
     if (!dpy) return;
-    if (use_shm) for (int i = 0; i < 2; i++) { XShmDetach(dpy, &shm[i]); shmdt(shm[i].shmaddr); }
+    if (use_shm) for (int i = 0; i < NBUF; i++) { XShmDetach(dpy, &shm[i]); shmdt(shm[i].shmaddr); }
     XCloseDisplay(dpy);
     dpy = NULL;
 }
 
-const Platform plat_x11 = {"x11", x11_init, x11_acquire, x11_present, x11_poll, x11_shutdown};
+const Platform plat_x11 = {"x11", x11_init, x11_buffer, x11_present, x11_poll, x11_shutdown};
 #endif

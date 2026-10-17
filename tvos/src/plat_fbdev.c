@@ -18,7 +18,7 @@ static uint8_t *fbmem;
 static size_t fbsize;
 static struct fb_var_screeninfo vinfo;
 static struct fb_fix_screeninfo finfo;
-static uint32_t *back;
+static uint32_t *back[NBUF];
 static int W, H, flip, page;
 static int inputs[16], ninputs;
 static int shift;
@@ -38,7 +38,7 @@ static int fb_init(int w, int h) {
     fbsize = (size_t)finfo.line_length * vinfo.yres_virtual;
     fbmem = mmap(NULL, fbsize, PROT_READ | PROT_WRITE, MAP_SHARED, fb, 0);
     if (fbmem == MAP_FAILED) { close(fb); return 0; }
-    back = xcalloc((size_t)w * h, 4);
+    for (int i = 0; i < NBUF; i++) back[i] = xcalloc((size_t)w * h, 4);
     tty = open("/dev/tty0", O_RDWR);
     if (tty >= 0) ioctl(tty, KDSETMODE, KD_GRAPHICS);
     DIR *d = opendir("/dev/input");
@@ -58,16 +58,17 @@ static int fb_init(int w, int h) {
     return 1;
 }
 
-static uint32_t *fb_acquire(int *stride) { *stride = W; return back; }
+static uint32_t *fb_buffer(int i, int *stride) { *stride = W; return back[i]; }
 
-static void fb_present(void) {
+static void fb_present(int bi) {
+    const uint32_t *frame = back[bi];
     int target = flip ? page ^ 1 : 0;
     uint8_t *base = fbmem + (size_t)target * vinfo.yres * finfo.line_length;
     int ox = ((int)vinfo.xres - W) / 2, oy = ((int)vinfo.yres - H) / 2;
     int sx = ox < 0 ? -ox : 0, sy = oy < 0 ? -oy : 0;
     int cw = MINI(W - sx, (int)vinfo.xres), ch = MINI(H - sy, (int)vinfo.yres);
     for (int y = 0; y < ch; y++) {
-        const uint32_t *src = back + (size_t)(y + sy) * W + sx;
+        const uint32_t *src = frame + (size_t)(y + sy) * W + sx;
         uint8_t *dst = base + (size_t)(y + MAXI(oy, 0)) * finfo.line_length;
         if (vinfo.bits_per_pixel == 32) {
             uint32_t *d32 = (uint32_t *)dst + MAXI(ox, 0);
@@ -139,7 +140,7 @@ static void fb_shutdown(void) {
     for (int i = 0; i < ninputs; i++) close(inputs[i]);
     if (fbmem) munmap(fbmem, fbsize);
     if (fb >= 0) close(fb);
-    free(back);
+    for (int i = 0; i < NBUF; i++) free(back[i]);
 }
 
-const Platform plat_fbdev = {"fbdev", fb_init, fb_acquire, fb_present, fb_poll, fb_shutdown};
+const Platform plat_fbdev = {"fbdev", fb_init, fb_buffer, fb_present, fb_poll, fb_shutdown};

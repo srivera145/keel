@@ -47,6 +47,7 @@ void gfx_set_target(Gfx *g, Surface target);
 void gfx_begin(Gfx *g);                 /* reset recorder for a new frame */
 void gfx_execute(Gfx *g, Surface *fb);  /* run the display list on the pool */
 int gfx_cmd_count(Gfx *g);
+uint64_t gfx_hash(Gfx *g);           /* identical hash => identical pixels */
 void *gfx_alloc(Gfx *g, size_t n);      /* per-frame arena memory */
 
 /* State: translation, opacity, clip. Push/pop pairs. */

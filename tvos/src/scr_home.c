@@ -15,7 +15,7 @@ static const int PICKS[] = {2, 8, 14, 17, 3, 21, 9, 18, 5, 12, 23, 19};
 #define NPICKS COUNT(PICKS)
 
 static const float ROW_Y[NROWS] = {690, 880, 1270, 1620};      /* item top, page coords */
-static const float ROW_SCROLL[NROWS] = {0, 600, 990, 1340};
+static const float ROW_SCROLL[NROWS] = {0, 600, 990, 1395};
 
 static int row_len(int r) {
     switch (r) {

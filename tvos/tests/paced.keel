@@ -1,0 +1,17 @@
+wait 5.5
+assets
+key ok
+wait 2
+reset_stats
+wait 8
+key down
+wait 2
+key up
+key up
+key right
+key down
+wait 4
+key ok
+wait 5.5
+key ok
+wait 8

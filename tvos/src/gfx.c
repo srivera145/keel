@@ -321,6 +321,53 @@ static inline uint32_t bilerp(uint32_t p00, uint32_t p01, uint32_t p10, uint32_t
     return rb | ag;
 }
 
+/* ---- 2-pixel SIMD bilinear (GCC vector extensions: SSE2 on x86, NEON on ARM) ---- */
+typedef uint16_t v8u16 __attribute__((vector_size(16)));
+typedef uint8_t v8u8 __attribute__((vector_size(8)));
+static inline v8u16 ld2(uint32_t a, uint32_t b) {
+    uint64_t q = (uint64_t)a | ((uint64_t)b << 32);
+    v8u8 v;
+    memcpy(&v, &q, 8);
+    return __builtin_convertvector(v, v8u16);
+}
+static inline void st2(uint32_t *d, v8u16 v) {
+    v8u8 r = __builtin_convertvector(v, v8u8);
+    memcpy(d, &r, 8);
+}
+/* mode 0: store (opaque), 1: blend premultiplied, 2: blend scaled by alpha */
+static void bilerp_span(uint32_t *dp, int n, const uint32_t *r0, const uint32_t *r1, int32_t u16, int32_t du16, uint32_t fy, int mode, uint32_t alpha) {
+    const v8u16 FY = {fy, fy, fy, fy, fy, fy, fy, fy};
+    const v8u16 K256 = {256, 256, 256, 256, 256, 256, 256, 256}, K128 = {128, 128, 128, 128, 128, 128, 128, 128};
+    const v8u16 K255 = {255, 255, 255, 255, 255, 255, 255, 255};
+    const v8u16 AL = {alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha};
+    int i = 0;
+    for (; i + 1 < n; i += 2) {
+        int ua = u16 >> 16, ub = (u16 + du16) >> 16;
+        uint16_t fa = (uint16_t)((u16 >> 8) & 255), fb = (uint16_t)(((u16 + du16) >> 8) & 255);
+        u16 += 2 * du16;
+        v8u16 FX = {fa, fa, fa, fa, fb, fb, fb, fb};
+        v8u16 W11 = (FX * FY + K128) >> 8;
+        v8u16 W01 = FX - W11, W10 = FY - W11, W00 = K256 - FX - FY + W11;
+        v8u16 A = ld2(r0[ua], r0[ub]), B = ld2(r0[ua + 1], r0[ub + 1]);
+        v8u16 C = ld2(r1[ua], r1[ub]), D = ld2(r1[ua + 1], r1[ub + 1]);
+        v8u16 px = (A * W00 + B * W01 + C * W10 + D * W11) >> 8;
+        if (mode == 0) { st2(dp + i, px); continue; }
+        if (mode == 2) { v8u16 t = px * AL + K128; px = (t + (t >> 8)) >> 8; }
+        v8u16 dst = ld2(dp[i], dp[i + 1]);
+        v8u16 sa = __builtin_shuffle(px, (v8u16){3, 3, 3, 3, 7, 7, 7, 7});
+        v8u16 t = dst * (K255 - sa) + K128;
+        st2(dp + i, px + ((t + (t >> 8)) >> 8));
+    }
+    for (; i < n; i++, u16 += du16) {
+        int ui = u16 >> 16;
+        uint32_t fx = (u16 >> 8) & 255;
+        uint32_t v = bilerp(r0[ui], r0[ui + 1], r1[ui], r1[ui + 1], fx, fy);
+        if (mode == 0) dp[i] = v;
+        else if (mode == 1) dp[i] = blend(dp[i], v);
+        else dp[i] = blend(dp[i], mul8(v, alpha));
+    }
+}
+
 static void exec_image(Surface *s, IRect c, const ImgCmd *p) {
     const Texture *t = p->t;
     if (!t || !t->px) return;
@@ -385,27 +432,7 @@ static void exec_image(Surface *s, IRect c, const ImgCmd *p) {
             int32_t ub = ubase + (s1 - 1 - a0) * du16;
             while (s1 > s0 && (ub >> 16) + 1 > wmax) { s1--; ub -= du16; }
             int32_t u16 = ubase + (s0 - a0) * du16;
-            uint32_t *dp = row + s0;
-            int n = s1 - s0;
-            if (direct) {
-                for (int i = 0; i < n; i++, u16 += du16) {
-                    int ui = u16 >> 16;
-                    uint32_t fx = (u16 >> 8) & 255;
-                    dp[i] = bilerp(r0[ui], r0[ui + 1], r1[ui], r1[ui + 1], fx, fy);
-                }
-            } else if (alpha == 255) {
-                for (int i = 0; i < n; i++, u16 += du16) {
-                    int ui = u16 >> 16;
-                    uint32_t fx = (u16 >> 8) & 255;
-                    dp[i] = blend(dp[i], bilerp(r0[ui], r0[ui + 1], r1[ui], r1[ui + 1], fx, fy));
-                }
-            } else {
-                for (int i = 0; i < n; i++, u16 += du16) {
-                    int ui = u16 >> 16;
-                    uint32_t fx = (u16 >> 8) & 255;
-                    dp[i] = blend(dp[i], mul8(bilerp(r0[ui], r0[ui + 1], r1[ui], r1[ui + 1], fx, fy), alpha));
-                }
-            }
+            bilerp_span(row + s0, s1 - s0, r0, r1, u16, du16, fy, direct ? 0 : (alpha == 255 ? 1 : 2), alpha);
         } else s0 = s1 = f0;
         /* Edges and clamped texels. */
         int32_t u16 = ubase;
@@ -1116,4 +1143,22 @@ void g_layer_end(Gfx *g, float radius, float alpha) {
     g->st[g->sp].alpha = alpha;
     g_image(g, &f->tex, (float)r.x0, (float)r.y0, w, h, radius, 1);
     g_pop(g);
+}
+
+/* Content hash of the recorded frame: identical lists produce identical
+ * pixels, so the caller can skip rendering and presenting entirely. */
+uint64_t gfx_hash(Gfx *g) {
+    uint64_t h = 1469598103934665603ull;
+#define MIX(v) do { h ^= (uint64_t)(v); h *= 1099511628211ull; } while (0)
+    for (int i = 0; i < g->ncmds; i++) {
+        const Cmd *c = &g->cmds[i];
+        const uint32_t *w = (const uint32_t *)c;
+        for (size_t k = 0; k < sizeof(Cmd) / 4; k++) MIX(w[k]);
+        if (c->type == C_GLYPHS)
+            for (int k = 0; k < c->txt.n; k++) { MIX((uintptr_t)c->txt.g[k].m); MIX(c->txt.g[k].x); MIX(c->txt.g[k].y); }
+        if (c->type == C_IMAGE) { MIX(c->img.t->ready); MIX(c->img.t->w); }
+    }
+    MIX(g->ncmds);
+#undef MIX
+    return h;
 }

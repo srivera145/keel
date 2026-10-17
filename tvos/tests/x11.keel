@@ -1,0 +1,42 @@
+wait 5
+assets
+key ok
+wait 1.5
+reset_stats
+echo --- home (realtime, X11)
+wait 6
+key down
+wait 2
+key down
+key right 3
+wait 2
+key up 2
+key up
+key right
+key down
+wait 3
+key down 2
+key right 2
+wait 2
+key ok
+wait 3
+key ok
+wait 6
+key back
+key back
+key up
+key right
+wait 1
+key down
+wait 3
+key ok
+wait 5
+key back
+key up
+key right 
+key down
+key ok
+wait 2
+key down
+key ok
+wait 6

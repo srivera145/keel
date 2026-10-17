@@ -127,7 +127,8 @@ void app_input(int key, int ch) {
     if (s == &scr_boot) return;
     if (key == K_HOME && s != &scr_profiles) {
         app.nav_focused = 0;
-        app_tab(TAB_HOME);
+        if (depth == 1 && s == &scr_home) scr_home.enter(0); /* already home: back to the top */
+        else app_tab(TAB_HOME);
         return;
     }
     if (app.set.ui_sounds && key >= K_UP && key <= K_RIGHT) sfx_play(SFX_MOVE);

@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #define MAX_THREADS 32
+static int g_spin = 4000;
 
 static struct {
     pthread_mutex_t m;
@@ -41,7 +42,7 @@ static void *worker(void *arg) {
     for (;;) {
         /* Spin briefly for low latency between frame phases, then sleep. */
         int spins = 0;
-        while (atomic_load_explicit(&P.gen, memory_order_acquire) == seen && spins < 4000) {
+        while (atomic_load_explicit(&P.gen, memory_order_acquire) == seen && spins < g_spin) {
             spins++;
 #if defined(__x86_64__) || defined(__i386__)
             __builtin_ia32_pause();
@@ -150,6 +151,7 @@ int jobs_pending(void) {
 int jobs_render_threads(void) { return P.nworkers + 1; }
 
 void jobs_init(int render_threads, int bg_threads) {
+    if (getenv("KEEL_SPIN")) g_spin = atoi(getenv("KEEL_SPIN"));
     pthread_mutex_init(&P.m, NULL);
     pthread_cond_init(&P.cv, NULL);
     pthread_cond_init(&P.done, NULL);

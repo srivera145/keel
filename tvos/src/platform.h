@@ -9,12 +9,14 @@ enum {
 
 typedef struct { int key; int ch; } InputEvent;
 
+/* Frames are rendered into one of NBUF buffers and handed to the presenter. */
+#define NBUF 3
+
 typedef struct Platform {
     const char *name;
     int (*init)(int w, int h);
-    /* Buffer to render the next frame into (may be a shared-memory surface). */
-    uint32_t *(*acquire)(int *stride);
-    void (*present)(void);
+    uint32_t *(*buffer)(int i, int *stride);   /* render target i (may be shared memory) */
+    void (*present)(int i);                   /* show buffer i; returns once it may be reused */
     int (*poll)(InputEvent *ev);
     void (*shutdown)(void);
 } Platform;

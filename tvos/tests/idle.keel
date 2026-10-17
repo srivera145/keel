@@ -1,0 +1,7 @@
+wait 3
+assets
+wait 2
+key ok
+wait 2
+reset_stats
+wait 20

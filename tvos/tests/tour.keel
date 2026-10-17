@@ -1,0 +1,210 @@
+# KEEL OS — full tour: every screen, screenshots + content checks.
+wait 1.5
+shot 01_boot.png
+check
+wait 3.5
+assets
+wait 0.5
+shot 02_profiles.png
+check
+key right
+wait 0.5
+shot 03_profiles_focus.png
+key left
+key ok
+wait 1.5
+shot 04_home.png
+check
+wait 9.5
+shot 05_home_next_hero.png
+key down
+wait 1
+shot 06_home_continue.png
+key down
+key right 2
+wait 1
+shot 07_home_apps.png
+key down
+wait 1
+shot 08_home_picks.png
+check
+# ---- Movies
+key home
+key up
+key right
+key down
+wait 1
+shot 10_movies.png
+check
+key down
+key right 2
+wait 1
+shot 11_movies_scrolled.png
+key ok
+wait 1.2
+shot 12_details.png
+check
+key down
+key right
+wait 0.6
+shot 13_details_more.png
+key up
+key left 3
+key ok
+wait 0.3
+shot 14_player_loading.png
+wait 3
+shot 15_player.png
+check
+wait 5
+shot 16_player_clean.png
+key ok
+wait 0.6
+shot 17_player_paused.png
+key back
+key back
+# ---- Live TV
+key home
+key up
+key right 2
+key down
+wait 1.5
+shot 20_live_guide.png
+check
+key down 2
+key right
+wait 1
+shot 21_live_guide_focus.png
+key left
+key ok
+wait 1.5
+shot 22_live_full.png
+check
+key up 2
+wait 1.2
+shot 23_ch_news.png
+check
+key down
+wait 1.2
+shot 24_ch_nature.png
+key down 2
+wait 1.2
+shot 25_ch_space.png
+check
+key down
+wait 1.2
+shot 26_ch_weather.png
+key down
+wait 1.2
+shot 27_ch_ocean.png
+key down
+wait 1.2
+shot 28_ch_retro.png
+key down
+wait 1.2
+shot 29_ch_kids.png
+key down
+wait 1.2
+shot 30_ch_cinema.png
+key back
+# ---- Music
+key home
+key up
+key right 3
+key down
+wait 1.5
+shot 40_music.png
+check
+key right 2
+key down 2
+wait 1
+shot 41_music_tracks.png
+key ok
+wait 3
+shot 42_nowplaying.png
+check
+key down
+key ok
+wait 3
+shot 43_visualizer.png
+check
+key back
+key back
+# ---- Photos
+key home
+key up
+key right 4
+key down
+wait 1.5
+shot 50_photos.png
+check
+key right
+key down
+wait 1
+shot 51_photos_focus.png
+key ok
+wait 1.5
+shot 52_viewer.png
+check
+key right
+wait 0.2
+shot 53_viewer_swipe.png
+key ok
+wait 2.5
+shot 54_slideshow.png
+wait 6
+shot 55_slideshow_crossfade.png
+key back
+# ---- Search
+key home
+key up
+key right 5
+key down
+wait 1
+shot 60_search.png
+check
+type ocean
+wait 1
+shot 61_search_query.png
+key del 5
+type n
+key right 6
+key down
+wait 1
+shot 62_search_results.png
+# ---- Settings
+key home
+key up
+key right 6
+key down
+wait 1
+shot 70_settings.png
+check
+key right
+key right
+wait 0.5
+shot 71_settings_accent.png
+key down
+key ok
+wait 0.3
+key left
+key down 5
+key right
+wait 0.5
+shot 72_settings_about.png
+key left
+key up 5
+key right
+key left
+# ---- Apps & overlay
+key home
+key down 2
+key right 4
+key ok
+wait 3.5
+shot 80_app_splash.png
+check
+key back
+key fps
+wait 1
+shot 81_home_perf_overlay.png
