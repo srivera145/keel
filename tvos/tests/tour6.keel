@@ -1,0 +1,47 @@
+wait 5
+assets
+key ok
+wait 1
+key up
+key right 5
+wait 0.4
+key down
+wait 1
+shot 60_search.png
+type ocean
+wait 1
+shot 61_search_ocean.png
+key del 5
+type s
+wait 0.2
+key right 6
+key down
+wait 1
+shot 62_search_results.png
+key up
+key right
+wait 0.4
+key down
+wait 1
+shot 63_settings.png
+key right
+key right
+wait 0.3
+key right
+wait 0.3
+shot 64_settings_accent.png
+key left
+key down 5
+key right
+key down 2
+wait 0.5
+shot 65_settings_about.png
+key home
+wait 1
+key down 2
+key right 4
+key ok
+wait 1
+shot 66_appsplash.png
+wait 3
+shot 67_appsplash_done.png

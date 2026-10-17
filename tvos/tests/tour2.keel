@@ -1,0 +1,35 @@
+wait 5
+assets
+key ok
+wait 1
+key up
+key right
+wait 0.4
+key down
+wait 1
+shot 10_movies.png
+key down
+key right 2
+wait 0.8
+shot 11_movies_row2.png
+key ok
+wait 1.2
+shot 12_details.png
+key down
+key right
+wait 0.6
+shot 13_details_more.png
+key up
+key left 2
+key ok
+wait 0.3
+shot 14_player_loading.png
+wait 3
+shot 15_player.png
+wait 5
+reset_stats
+wait 4
+shot 16_player_clean.png
+key ok
+wait 0.6
+shot 17_player_paused.png

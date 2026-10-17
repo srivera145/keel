@@ -1,0 +1,25 @@
+wait 5
+assets
+key ok
+wait 1
+key up
+key right 3
+wait 0.4
+key down
+wait 1.5
+shot 40_music.png
+key right 2
+key down 2
+key down 1
+wait 1
+shot 41_music_tracks.png
+key ok
+wait 3
+shot 42_nowplaying.png
+key down
+key ok
+wait 3
+shot 43_visualizer.png
+wait 2
+profile
+shot 44_visualizer2.png

@@ -1,0 +1,25 @@
+wait 5
+assets
+key ok
+wait 1
+key up
+key right 4
+wait 0.4
+key down
+wait 1.5
+shot 50_photos.png
+key right
+key down
+wait 1
+shot 51_photos_focus.png
+key ok
+wait 1.5
+shot 52_viewer.png
+key right
+wait 0.2
+shot 53_viewer_slide.png
+key ok
+wait 2
+shot 54_slideshow.png
+wait 6
+shot 55_slideshow_xfade.png

@@ -1,0 +1,41 @@
+wait 5
+assets
+key ok
+wait 1
+key up
+key right 2
+wait 0.4
+key down
+wait 1.5
+shot 20_live.png
+key down 2
+key right
+wait 1
+shot 21_live_focus.png
+key left
+key ok
+wait 1.5
+shot 22_live_full.png
+wait 6
+shot 23_live_full_clean.png
+key up
+wait 1
+shot 24_live_news.png
+key down 3
+wait 1
+shot 25_live_space.png
+key down
+wait 1
+shot 26_live_weather.png
+key down
+wait 1
+shot 27_live_ocean.png
+key down
+wait 1
+shot 28_live_retro.png
+key down
+wait 1
+shot 29_live_kids.png
+key down
+wait 1
+shot 30_live_cinema.png

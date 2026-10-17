@@ -1,0 +1,28 @@
+wait 1.5
+shot 01_boot.png
+wait 3.5
+assets
+wait 0.5
+shot 02_profiles.png
+key right
+wait 0.4
+shot 03_profiles_focus.png
+key left
+key ok
+wait 1.2
+shot 04_home.png
+key down
+wait 0.8
+shot 05_home_continue.png
+key down
+key right 2
+wait 0.8
+shot 06_home_apps.png
+key down
+wait 0.8
+shot 07_home_picks.png
+reset_stats
+key up 3
+wait 3
+key right
+wait 2

@@ -1,0 +1,32 @@
+wait 5
+assets
+key ok
+wait 1
+key up
+key right 6
+wait 0.3
+key down
+wait 1
+shot 70_settings.png
+key right
+key right
+wait 0.3
+key right
+wait 0.5
+shot 71_settings_accent.png
+key left
+key down 5
+key right
+wait 0.5
+shot 72_settings_about.png
+key left
+key up 4
+key right
+key down
+key right 4
+wait 0.5
+shot 73_settings_glass.png
+key left 2
+key home
+wait 1
+shot 74_home_violet.png

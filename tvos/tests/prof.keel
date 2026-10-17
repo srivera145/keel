@@ -1,0 +1,18 @@
+wait 5
+assets
+key ok
+wait 1.5
+profile
+key down
+wait 1
+profile
+key down
+wait 1
+profile
+key up 3
+key right
+key down
+key ok
+key ok
+wait 4
+profile
