@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d3d664e6abcf67ec6001469238f73c82",
+    "content-hash": "5a05fb9f4921f6e01e2dbe75be37d208",
     "packages": [
         {
             "name": "echodial/deck",
@@ -124,6 +124,34 @@
                 }
             ],
             "time": "2025-12-27T19:43:20+00:00"
+        },
+        {
+            "name": "klaus/keel",
+            "version": "dev-klaus-init-ci",
+            "dist": {
+                "type": "path",
+                "url": "../hybrid/adapters/keel",
+                "reference": "fe58bc8fb986a6a0b97967b8768c5e8030fb1013"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Klaus\\Keel\\": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Serves Klaus pages (klaus build --target keel) from Keel, with Keel's session, CSRF token, database, user, tenant and layout.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "phpmailer/phpmailer",
@@ -2448,7 +2476,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "klaus/keel": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

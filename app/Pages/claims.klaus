@@ -1,0 +1,96 @@
+---
+// Warranty claims: a Klaus 1.0 page that Keel serves at /claims, with Keel's login, session, CSRF token, database and
+// layout, and only the current organization's claims. `composer klaus:build` compiles it into storage/klaus, with its
+// JS in public_html/klaus; Pages::register in routes/web.php routes it.
+// The counts, the table and each row in it are live partials: Approve, Reject and Add claim answer with the ones they
+// changed rendered again, and the runtime swaps them in.
+layout "./layouts/app.klaus" with { title: "Claims" }
+
+import { auth, tenant, role, currentTenant } from "klaus:keel"
+import ClaimCounts from "./partials/claim-counts.klaus"
+import ClaimTable from "./partials/claim-table.klaus"
+import { canDecide, findClaim } from "./lib/claims.klaus"
+
+guard auth   // logged out: page loads go to /login, server fn calls get a 401
+guard tenant // no organization yet: page loads go to /onboarding/organization
+
+// ── Server: runs in PHP, never sent to the browser ────────────────
+
+// The "Add claim" form sends its fields here: action={server.addClaim}. They all arrive as strings, and the runtime
+// checks that before this runs (anything else is a 400). A ValidationError puts each message under its field; a new
+// claim comes back with the table and the counts. db.scoped("claims") writes this organization's id into the row
+// itself, and counts this organization's claims only.
+server fn addClaim(form: { ro: string, customer: string, vehicle: string, amount: string }) {
+  role("admin") // owners and admins; members see the list
+  const claims = db.scoped("claims")
+  const ro = form.ro.trim()
+  const customer = form.customer.trim()
+  const vehicle = form.vehicle.trim()
+  const amount = tryFloat(form.amount.trim()) ?? 0 // not a number → 0, which the check below turns away
+
+  let errors: map<string, string> = {}
+  if (ro === "") {
+    errors.ro = "Enter the RO number"
+  } else if (claims.count("ro_number = ?", [ro]) > 0) {
+    errors.ro = `${ro} already has a claim`
+  }
+  if (customer === "") {
+    errors.customer = "Enter the customer's name"
+  }
+  if (vehicle === "") {
+    errors.vehicle = "Enter the vehicle"
+  }
+  if (amount <= 0) {
+    errors.amount = "Enter an amount above 0, like 120.50"
+  }
+  if (errors.size > 0) {
+    throw new ValidationError(errors)
+  }
+
+  const id = claims.insert({ ro_number: ro, customer, vehicle, amount: math.roundTo(amount, 2) })
+  return respond(findClaim(id)).refresh(ClaimTable).refresh(ClaimCounts)
+}
+
+// ── Page setup: runs on the server for every page load ────────────
+
+const organization = currentTenant()
+const decide = canDecide()
+---
+{#fill subtitle}<p class="text-muted">{organization.name}</p>{/fill}
+        <ClaimCounts live />
+        <section class="card" aria-labelledby="claims-title">
+            <div class="card-header">
+                <h2 id="claims-title" class="card-title">Warranty claims</h2>
+            </div>
+            <ClaimTable live />
+        </section>
+        {#if decide}
+        <section class="card" aria-labelledby="add-claim">
+            <div class="card-body">
+                <h2 class="card-title" id="add-claim">Add claim</h2>
+                <form class="stack" action={server.addClaim} novalidate>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="label" for="ro">RO number</label>
+                            <input class="input" id="ro" name="ro" placeholder="RO-10460" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="label" for="customer">Customer</label>
+                            <input class="input" id="customer" name="customer" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="label" for="vehicle">Vehicle</label>
+                            <input class="input" id="vehicle" name="vehicle" placeholder="2025 Ranger" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="label" for="amount">Amount</label>
+                            <input class="input" id="amount" name="amount" inputmode="decimal" placeholder="120.50" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary">Add claim</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        {/if}

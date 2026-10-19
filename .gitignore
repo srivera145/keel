@@ -1,5 +1,8 @@
 /vendor
 /public_html/deck/
+# Klaus pages compiled from app/Pages by `composer klaus:build`
+/storage/klaus/
+/public_html/klaus/
 public_html/uploads/*
 !public_html/uploads/.gitkeep
 .env

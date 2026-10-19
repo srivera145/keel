@@ -1,0 +1,39 @@
+// What the claims page and its partials share: the types, the queries, who may decide, and money(). A Klaus 1.0
+// module: `composer klaus:build` compiles it into storage/klaus/lib/claims.php, and its one shared fn into
+// public_html/klaus/lib/claims.js, which the page's bundle imports.
+import { user } from "klaus:keel"
+
+export type Status = "pending" | "approved" | "rejected"
+
+export type Claim = {
+  id: int,
+  ro_number: string,
+  customer: string,
+  vehicle: string,
+  amount: float,
+  status: Status,
+}
+
+// This organization's claim with this id, or null. db.scoped("claims") adds `organization_id = <this organization>`
+// to every query, so another organization's claim is "not found", as an id that doesn't exist is.
+// The type converts what is safe: MySQL's DECIMAL "412.50" is the float 412.5.
+export fn findClaim(id: int): Claim? {
+  return db.scoped("claims").find<Claim>(id)
+}
+
+// This organization's claims, oldest first
+export fn loadClaims(): Claim[] {
+  return db.scoped("claims").all<Claim>("", [], "id")
+}
+
+// Deciding claims and adding them is for the organization's owners and admins; members see the list. The server fns
+// that do it check again, with role("admin").
+export fn canDecide(): bool {
+  const role = user().role
+  return role === "owner" || role === "admin"
+}
+
+// "$1,288.00". Shared: the page renders it on the server, and the browser uses it in a toast.
+export shared fn money(amount: float): string {
+  return "$" + formatNumber(amount, 2)
+}

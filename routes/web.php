@@ -26,6 +26,7 @@ use Keel\App\Middleware\RequireOrganizationMiddleware;
 use Keel\App\Middleware\RequireSuperAdminMiddleware;
 use Keel\App\Middleware\ThrottleMiddleware;
 use Keel\Core\Env;
+use Klaus\Keel\Pages;
 
 /** @var \Keel\Core\Router $router */
 
@@ -94,6 +95,11 @@ $router->group(['middleware' => [CsrfMiddleware::class]], function ($router) use
             $router->get('/files/{id}', [FileController::class, 'show']);
         });
     });
+
+    // Pages written in Klaus: app/Pages/*.klaus, built into storage/klaus with `composer klaus:build`.
+    // Each one is GET + POST /<name>, and guards itself (see the guard lines at the top of app/Pages/claims.klaus).
+    // Registered last, so a Keel route with the same path still wins.
+    Pages::register($router);
 });
 
 $router->group(['prefix' => '/api/v1', 'middleware' => [ThrottleMiddleware::class, ApiAuthMiddleware::class]], function ($router) {

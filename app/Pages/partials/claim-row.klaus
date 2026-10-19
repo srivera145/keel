@@ -1,0 +1,79 @@
+---
+// ── One claim row, included live: its key is the claim's id, so a server fn can send back just this row. ──
+import ClaimCounts from "./claim-counts.klaus"
+import ClaimRow from "./claim-row.klaus" // itself: updateClaim refreshes this row
+import { role } from "klaus:keel"
+import { Claim, Status, canDecide, findClaim, money } from "../lib/claims.klaus"
+
+// The table passes c. A refresh by key alone, refresh(ClaimRow, 7), passes only the key: then the row loads its claim.
+props(c: Claim? = null, key: int? = null)
+
+const claim = c ?? loadRow(key)
+const decide = canDecide()
+
+fn loadRow(id: int?): Claim {
+  const found = id ? findClaim(id) : null
+  if (!found) {
+    throw new UserError("Claim not found.")
+  }
+  return found
+}
+
+// Approve and Reject. role("admin") lets owners and admins through, and answers a member with Forbidden (a 403).
+// db.scoped("claims") changes a row of this organization only: another organization's claim id is "not found", as an
+// id that doesn't exist is, and nothing changes. The answer is the claim, with this row and the counts rendered again,
+// which the browser swaps in before `await server.updateClaim(...)` returns.
+// `changes.status` can only be one of the three statuses: the runtime checks the call against the types (else 400).
+server fn updateClaim(id: int, changes: { status: Status }) {
+  role("admin")
+  const updated = db.scoped("claims").update<Claim>(id, { status: changes.status }) ?? throw new UserError("Claim not found.")
+  return respond(updated).refresh(ClaimRow, id, { c: updated }).refresh(ClaimCounts)
+}
+
+// The Deck badge tone for a status. The match covers every Status, so it needs no default.
+fn statusBadge(status: Status): string {
+  return match (status) {
+    "approved" => "badge-good",
+    "rejected" => "badge-bad",
+    "pending" => "badge-warn",
+  }
+}
+
+client fn approve(id: int) {
+  await setStatus(this, id, "approved")
+}
+
+client fn reject(id: int) {
+  await setStatus(this, id, "rejected")
+}
+
+client fn setStatus(button: Element, id: int, status: Status) {
+  button.classList.add("is-loading") // Deck's spinner in place of the label. The new row comes without it.
+  try {
+    const updated = await server.updateClaim(id, { status })
+    toast(`${updated.ro_number} ${updated.status}: ${money(updated.amount)}`)
+  } catch (err) {
+    button.classList.remove("is-loading")
+    toast(err.message, "err")
+  }
+}
+---
+      <tr>
+        <td data-label="RO" class="fw-medium">{claim.ro_number}</td>
+        <td data-label="Customer">{claim.customer}</td>
+        <td data-label="Vehicle">{claim.vehicle}</td>
+        <td data-label="Amount" class="nums text-end">{money(claim.amount)}</td>
+        <td data-label="Status"><span class="badge capitalize {statusBadge(claim.status)}">{claim.status}</span></td>
+        <td class="text-end">
+          {#if decide}
+          <div class="cluster cluster-tight">
+            {#if claim.status !== "approved"}
+            <button type="button" class="btn btn-sm btn-primary" onclick={approve(claim.id)}>Approve</button>
+            {/if}
+            {#if claim.status !== "rejected"}
+            <button type="button" class="btn btn-sm" onclick={reject(claim.id)}>Reject</button>
+            {/if}
+          </div>
+          {/if}
+        </td>
+      </tr>

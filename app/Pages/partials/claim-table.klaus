@@ -1,0 +1,40 @@
+---
+// ── This organization's claims, included live: addClaim refreshes it, so a new claim shows up as a row. ──
+// Each row is a live partial of its own, keyed by the claim's id. The table is Deck's: a real table on wide screens,
+// and below 40rem `table-stack` turns each row into a card whose lines are labelled from the cells' data-label.
+import ClaimRow from "./claim-row.klaus"
+import { loadClaims } from "../lib/claims.klaus"
+import { currentTenant } from "klaus:keel"
+import { Deck } from "php:EchoDial/Deck"
+
+const claims = loadClaims()
+---
+<div class="table-wrap" tabindex="0" role="region" aria-labelledby="claims-title">
+  <table class="table table-stack">
+    <thead>
+      <tr>
+        <th scope="col">RO</th>
+        <th scope="col">Customer</th>
+        <th scope="col">Vehicle</th>
+        <th scope="col" class="text-end">Amount</th>
+        <th scope="col">Status</th>
+        <th scope="col"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+    {#each claims as claim}
+      <ClaimRow c={claim} key={claim.id} live />
+    {:else}
+      <tr>
+        <td colspan="6" class="table-empty">
+          <div class="empty">
+            <span class="empty-art">{@html Deck.icon("car")}</span>
+            <p class="empty-title">No claims yet</p>
+            <p>Warranty claims for {currentTenant().name} will appear here.</p>
+          </div>
+        </td>
+      </tr>
+    {/each}
+    </tbody>
+  </table>
+</div>

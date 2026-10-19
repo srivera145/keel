@@ -1,0 +1,39 @@
+---
+// Keel's frame for Klaus 1.0 pages, built from the same pieces as views/settings/*.php: the <html> attributes (the
+// user's light or dark theme, the organization's brand hue), Keel's own <head> (Deck, keel.css, keel.js, the theme
+// script and the CSRF meta tag), and the settings-page header with the theme switch and Sign out.
+// A page names its title with `layout "./layouts/app.klaus" with { title: "Claims" }`, and can fill "subtitle" (above
+// the title) and "head".
+import { html_attributes, view } from "klaus:keel"
+import { Csrf } from "php:Keel/Core"
+
+props(title: string = "Keel")
+---
+<!DOCTYPE html>
+<html {@html html_attributes()}>
+<head>
+{@html view("partials.head", { title })}
+{#slot head}{/slot}
+</head>
+<body>
+    <span id="top" tabindex="-1"></span>
+
+    <main class="container settings-page stack stack-6">
+        <header class="bar">
+            <div class="stack stack-2">
+                {#slot subtitle}{/slot}
+                <h1 class="h2">{title}</h1>
+            </div>
+            {@html view("partials.theme-toggle", { themeToggleClass: "push" })}
+            <form method="POST" action="/logout">
+                {@html Csrf.field()}
+                <button type="submit" class="btn btn-sm">Sign out</button>
+            </form>
+        </header>
+
+{@slot}
+    </main>
+
+    {@html view("partials.back-to-top")}
+</body>
+</html>

@@ -1,0 +1,19 @@
+---
+// ── How many of this organization's claims are pending, approved and rejected, as Deck stat cards. Included live. ──
+// It loads its own numbers, so a refresh needs no props: updateClaim and addClaim refresh it.
+let counts: map<string, int> = { pending: 0, approved: 0, rejected: 0 }
+for (const status of counts.keys()) {
+  counts[status] = db.scoped("claims").count("status = ?", [status])
+}
+// --min is the narrowest a column of Deck's .grid gets: three in a row on a 375px phone, fewer below that.
+---
+<div class="grid" style="--min: 6rem">
+{#each counts.entries() as [status, n]}
+  <div class="card">
+    <div class="card-body stat p-4">
+      <span class="stat-label capitalize">{status}</span>
+      <span class="stat-value">{n}</span>
+    </div>
+  </div>
+{/each}
+</div>
