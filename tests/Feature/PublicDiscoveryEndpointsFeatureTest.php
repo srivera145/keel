@@ -49,14 +49,38 @@ class PublicDiscoveryEndpointsFeatureTest extends TestCase
         self::assertStringContainsString("Disallow: /api/\n", $response->body);
         self::assertStringContainsString("Disallow: /billing/\n", $response->body);
         self::assertStringContainsString("Disallow: /dashboard\n", $response->body);
-        self::assertStringContainsString("Disallow: /files/\n", $response->body);
         self::assertStringContainsString("Disallow: /settings/\n", $response->body);
+
+        // POST /files is a one-segment page: "/files" covers it and /files/{id}, so "/files/" is not listed too.
+        self::assertStringContainsString("Disallow: /files\n", $response->body);
+        self::assertStringNotContainsString("Disallow: /files/\n", $response->body);
 
         self::assertStringNotContainsString('Disallow: /docs', $response->body);
         self::assertStringNotContainsString('Disallow: /login', $response->body);
 
         $baseUrl = rtrim((string) ($_ENV['APP_URL'] ?? 'http://localhost'), '/');
         self::assertStringContainsString('Sitemap: ' . $baseUrl . '/sitemap.xml', $response->body);
+    }
+
+    public function testManifestIconsPointAtFilesThatExist(): void
+    {
+        $response = $this->get('/manifest.webmanifest');
+
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('application/manifest+json', (string) $response->header('Content-Type'));
+
+        $manifest = $response->json();
+        self::assertSame('Keel', $manifest['name'] ?? null);
+        self::assertNotEmpty($manifest['icons'] ?? []);
+
+        foreach ($manifest['icons'] as $icon) {
+            $file = self::$basePath . '/public_html' . $icon['src'];
+            self::assertFileExists($file, $icon['src']);
+
+            $size = getimagesize($file);
+            self::assertIsArray($size, $icon['src']);
+            self::assertSame($size[0] . 'x' . $size[1], $icon['sizes'], $icon['src']);
+        }
     }
 
     public function testLlmsTxtUsesSharedDocsRegistryLinks(): void

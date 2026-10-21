@@ -13,10 +13,10 @@ $router-&gt;get('/auth/magic', [AuthController::class, 'verifyMagicLink']);</cod
 
     <h2>Current behavior</h2>
     <ul>
-        <li>OTP: 6-digit code, hashed with <code>password_hash()</code>, 10-minute expiry.</li>
-        <li>Magic link: 32-byte token, SHA-256 hash at rest, 15-minute expiry.</li>
+        <li>OTP: 6-digit code, hashed with <code>password_hash()</code>, 10-minute expiry, single use. Five wrong guesses burn the outstanding code, and an IP address gets 20 verification attempts per 15 minutes.</li>
+        <li>Magic link: 32-byte token, SHA-256 hash at rest, 15-minute expiry, single use.</li>
         <li>Both flows send mail through the shared Mailer (see the Mailing docs page for SMTP/log setup).</li>
-        <li>Both flows rate-limit token issuance to 5 requests per 15 minutes per user.</li>
+        <li>Both flows limit token issuance to 5 requests per 15 minutes per user and 10 per 15 minutes per IP address.</li>
         <li>Successful sign-in regenerates the session and sets <code>user_id</code>, <code>user_email</code>, and org/theme session values.</li>
         <li>If multi-tenancy is enabled and no org is assigned, login redirects to <code>/onboarding/organization</code>; otherwise <code>/dashboard</code>.</li>
     </ul>

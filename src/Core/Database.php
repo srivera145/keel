@@ -32,6 +32,10 @@ class Database
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]);
+                // NOW() and CURRENT_TIMESTAMP in UTC, the clock PHP's date() uses (Env::load sets it). Expiries are
+                // written with date() and compared with NOW(), so on a server whose time zone is not UTC every
+                // expiry moved: at UTC-6 a 10-minute sign-in code stayed valid for six hours.
+                self::$instance->exec("SET time_zone = '+00:00'");
             } catch (PDOException $e) {
                 error_log('[Keel] DB connection failed: ' . $e->getMessage());
                 throw new PDOException('Database connection failed.');

@@ -98,6 +98,7 @@ storage/app/          Private uploaded files, not web-accessible.
    php database/migrate.php
    ```
    This creates the configured database automatically if it does not exist yet, runs any pending SQL files in `database/migrations/`, records them in a `migrations` table, and creates `users`, `auth_tokens`, and any later starter-kit tables such as `subscriptions`.
+   Each file runs one statement at a time (`Keel\Core\Migrations`), so a statement that fails anywhere in a file is reported with its own error and the file is not recorded as applied. `--pretend` lists what would run.
    Your `DB_USERNAME` must have permission to create databases on the target MySQL server.
 
    Security-related tables such as `rate_limits` are created by later migrations the same way.
@@ -219,8 +220,11 @@ In Docker, app database host is wired to `db` in `docker-compose.yml`.
 
 ## How auth works
 
-- **OTP**: 6-digit code, hashed with `password_hash()`, expires in 10 minutes, rate-limited to 5 requests per 15 minutes per user.
-- **Magic Link**: 32-byte random token, hashed with SHA-256, expires in 15 minutes, single-use, same rate limit.
+- **OTP**: 6-digit code, hashed with `password_hash()`, expires in 10 minutes, single-use. Requests are limited to 5 per 15 minutes per user and 10 per 15 minutes per IP address. Five wrong guesses burn the outstanding code (a new one must be requested), and an IP address gets 20 verification attempts per 15 minutes.
+- **Magic Link**: 32-byte random token, hashed with SHA-256, expires in 15 minutes, single-use, the same per-user and per-IP request limits.
+- Single use holds even when two requests arrive at once (a mail scanner and the user): only the request that marks the token used signs in.
+- The per-IP limits count `REMOTE_ADDR`. Behind a reverse proxy, have the web server set it from the forwarded header (Apache `mod_remoteip`, nginx `real_ip`).
+- Timestamps are UTC: `Env::load` sets PHP's time zone to UTC and `Database` sets each MySQL session to `+00:00`, so expiries written by PHP and compared with `NOW()` agree whatever the server's own time zone.
 - Both write to `auth_tokens`. A successful verify creates a session (`Session::put('user_id', ...)`), regenerates the session ID, and redirects to `/dashboard`.
 - `AuthMiddleware` guards any route group that needs a logged-in user — see `routes/web.php` for the pattern.
 
@@ -237,6 +241,8 @@ In Docker, app database host is wired to `db` in `docker-compose.yml`.
 - Executable-adjacent extensions are rejected even if they appear in the configured allowed-extension list.
 - Private files are never served directly from disk; they flow through `GET /files/{id}` and an ownership check first.
 - `AiService` wraps Anthropic's Messages API with plain `curl`, supports text completions, JSON-only responses, and image + prompt requests.
+- `AiService::messages()` sends a whole Messages API request as given; `AiService::stream()` streams the server-sent events to a callback as they arrive and stops reading when the callback returns false (for example when `connection_aborted()` says the browser has gone). `ANTHROPIC_BASE_URL` points it at another host, and `AiService::useTransport()` replaces `curl` in tests.
+- `AiService` never logs a prompt, a response or an error body, with or without `APP_DEBUG`: failures are logged with the HTTP status and the `curl` error only.
 
 ## Organizations
 
@@ -295,7 +301,7 @@ The script is intentionally blocked outside local/dev/testing environments.
 - State-changing requests are protected by CSRF tokens. The shared head partial outputs a `csrf-token` meta tag, and forms can use `\Keel\Core\Csrf::field()`.
 - Auth-related endpoints sit behind an IP-based throttle keyed by client IP and route path.
 - Webhook routes stay outside CSRF and throttle middleware because they are verified by third-party signatures instead.
-- Missing routes render a branded 404 page, and uncaught exceptions render a branded 500 page.
+- Missing routes render a branded 404 page, and uncaught exceptions render a branded 500 page. Under `/api` they are JSON instead (`{"error":"Not found."}`, `{"error":"Server error."}`), never with exception details. Error pages go out through `Response::raw`, so a test that hits one gets a response rather than ending the PHPUnit run.
 - `public_html/index.php` sets baseline headers on every response: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: strict-origin-when-cross-origin`.
 
 ## Health checks

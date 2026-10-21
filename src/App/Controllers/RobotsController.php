@@ -59,6 +59,13 @@ class RobotsController extends Controller
             $prefixes[$prefix] = true;
         }
 
+        // "/files" already covers "/files/".
+        foreach (array_keys($prefixes) as $prefix) {
+            if (str_ends_with($prefix, '/') && isset($prefixes[rtrim($prefix, '/')])) {
+                unset($prefixes[$prefix]);
+            }
+        }
+
         $prefixes = array_keys($prefixes);
         sort($prefixes, SORT_STRING);
 
@@ -73,10 +80,10 @@ class RobotsController extends Controller
             return '/';
         }
 
+        // A one-segment page (/dashboard) is disallowed as "/dashboard", which covers it and everything under it.
+        // "/dashboard/" would leave the page itself crawlable.
         if (count($segments) === 1) {
-            return $segments[0] === 'dashboard'
-                ? '/dashboard'
-                : '/' . $segments[0] . '/';
+            return '/' . $segments[0];
         }
 
         return '/' . $segments[0] . '/';
