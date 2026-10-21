@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -34,21 +37,55 @@ jobs:
       DB_PASSWORD: root
       DB_CHARSET: utf8mb4
 
+    # The app and Klaus side by side, as on a developer's machine: composer.json's path repository for klaus/keel is
+    # ../hybrid/adapters/keel. actions/checkout only writes inside the workspace, so the app goes in keel/ and Klaus
+    # in hybrid/, and every step runs in keel/.
+    defaults:
+      run:
+        working-directory: keel
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: keel
 
+      # srivera145/klaus is private: KLAUS_READ_TOKEN is a read-only token for it. GitHub masks the secret in the log,
+      # and persist-credentials: false keeps it out of hybrid/.git/config, so no later step can read it back.
+      - name: Check out Klaus next to the app
+        uses: actions/checkout@v4
+        with:
+          repository: srivera145/klaus
+          token: ${{ secrets.KLAUS_READ_TOKEN }}
+          path: hybrid
+          persist-credentials: false
+
+      # variables_order=EGPCS: Keel reads its settings from $_ENV, and PHP's default (GPCS) leaves the job's env:
+      # out of it, so DB_DATABASE_TEST and the rest above would never reach the app or its tests.
       - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: pdo, pdo_mysql, mbstring, zip
+          ini-values: variables_order=EGPCS
           coverage: none
 
+      - name: Setup Node 20 (the Klaus compiler)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       # Composer installs Deck and publishes its stylesheet, icon sprite and scripts into
-      # public_html/deck. There is no front-end build step to run.
+      # public_html/deck, and links klaus/keel from ../hybrid/adapters/keel.
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
+
+      # The Klaus pages in app/Pages, compiled as composer klaus:build does on a developer's machine: a compile error
+      # fails the build, and every PHP file it writes must parse.
+      - name: Build the Klaus pages
+        run: |
+          composer klaus:build
+          find storage/klaus -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Wait for MySQL
         run: |
