@@ -9,6 +9,7 @@ use Keel\Core\Auth;
 use Keel\Core\CapturedResponseException;
 use Keel\Core\Csrf;
 use Keel\Core\Database;
+use Keel\Core\Migrations;
 use Keel\Core\Request;
 use Keel\Core\Response;
 use Keel\Core\Router;
@@ -303,6 +304,9 @@ abstract class TestCase extends PhpUnitTestCase
             throw new \RuntimeException('DB_DATABASE_TEST must clearly target a non-development database (expected name to include test/ci).');
         }
 
+        // The app's clock, as Env::load sets it (the tests load .env.testing themselves).
+        date_default_timezone_set('UTC');
+
         $_ENV['APP_ENV'] = 'testing';
         $_SERVER['APP_ENV'] = 'testing';
         $_ENV['DB_DATABASE'] = $testDatabase;
@@ -342,40 +346,7 @@ abstract class TestCase extends PhpUnitTestCase
 
     private static function applyPendingMigrations(): void
     {
-        $connection = Database::connection();
-        $connection->exec(
-            'CREATE TABLE IF NOT EXISTS migrations (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL UNIQUE,
-                migrated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
-        );
-
-        $applied = [];
-        $statement = $connection->query('SELECT name FROM migrations');
-        foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $migrationName) {
-            $applied[(string) $migrationName] = true;
-        }
-
-        $files = glob(self::$basePath . '/database/migrations/*.sql') ?: [];
-        sort($files, SORT_NATURAL);
-
-        foreach ($files as $file) {
-            $name = basename($file);
-            if (isset($applied[$name])) {
-                continue;
-            }
-
-            $sql = trim((string) file_get_contents($file));
-            if ($sql === '') {
-                continue;
-            }
-
-            $connection->exec($sql);
-
-            $insert = $connection->prepare('INSERT INTO migrations (name) VALUES (?)');
-            $insert->execute([$name]);
-        }
+        Migrations::apply(Database::connection(), self::$basePath . '/database/migrations');
     }
 
     private function truncateApplicationTables(): void

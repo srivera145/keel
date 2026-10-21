@@ -24,7 +24,7 @@ class AuthController extends Controller
             $this->json(['success' => false, 'message' => 'Enter a valid email.'], 422);
         }
 
-        $result = (new OtpService())->requestCode($email);
+        $result = (new OtpService())->requestCode($email, $this->clientIp());
         $this->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -37,7 +37,7 @@ class AuthController extends Controller
             $this->json(['success' => false, 'message' => 'Email and code are required.'], 422);
         }
 
-        $result = (new OtpService())->verifyCode($email, $code);
+        $result = (new OtpService())->verifyCode($email, $code, $this->clientIp());
 
         if ($result['success']) {
             $this->loginUser($result['user']);
@@ -54,7 +54,7 @@ class AuthController extends Controller
             $this->json(['success' => false, 'message' => 'Enter a valid email.'], 422);
         }
 
-        $result = (new MagicLinkService())->sendLink($email);
+        $result = (new MagicLinkService())->sendLink($email, $this->clientIp());
         $this->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -101,5 +101,15 @@ class AuthController extends Controller
         }
 
         return '/dashboard';
+    }
+
+    /**
+     * The address the per-IP sign-in limits count against: REMOTE_ADDR, as ThrottleMiddleware uses. Behind a reverse
+     * proxy every request shares the proxy's address, so have the web server set REMOTE_ADDR from the forwarded
+     * header (mod_remoteip, real_ip) rather than trusting X-Forwarded-For here.
+     */
+    private function clientIp(): string
+    {
+        return trim((string) ($_SERVER['REMOTE_ADDR'] ?? '')) ?: 'unknown';
     }
 }

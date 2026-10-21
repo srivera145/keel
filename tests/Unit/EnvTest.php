@@ -43,6 +43,28 @@ class EnvTest extends TestCase
         self::assertSame('fallback', Env::get('__TEST_MISSING__', 'fallback'));
     }
 
+    public function testLoadSetsPhpsClockToUtc(): void
+    {
+        $loaded = new \ReflectionProperty(Env::class, 'loaded');
+        $wasLoaded = $loaded->getValue();
+        $zone = date_default_timezone_get();
+        $emptyDirectory = sys_get_temp_dir() . '/keel-env-test-' . bin2hex(random_bytes(4));
+        mkdir($emptyDirectory);
+
+        try {
+            date_default_timezone_set('America/Denver');
+            $loaded->setValue(null, false);
+
+            Env::load($emptyDirectory);
+
+            self::assertSame('UTC', date_default_timezone_get());
+        } finally {
+            $loaded->setValue(null, $wasLoaded);
+            date_default_timezone_set($zone);
+            rmdir($emptyDirectory);
+        }
+    }
+
     public function testGetCastsStringBooleansToNativeBooleans(): void
     {
         $_ENV['__TEST_BOOL__'] = 'true';

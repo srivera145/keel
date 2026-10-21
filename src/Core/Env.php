@@ -17,13 +17,17 @@ class Env
         $dotenv = Dotenv::createImmutable($basePath);
         $dotenv->safeLoad();
         self::$loaded = true;
+
+        // Every timestamp the app writes is UTC; Database sets the MySQL session to UTC to match.
+        date_default_timezone_set('UTC');
     }
 
     public static function get(string $key, mixed $default = null): mixed
     {
+        // ?? skips nulls and getenv() returns a string or false, so $value is never null here.
         $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
 
-        if ($value === false || $value === null) {
+        if ($value === false) {
             return $default;
         }
 
