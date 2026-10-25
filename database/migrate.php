@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Keel\Core\Env;
+use Keel\Core\Migrations;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -18,54 +19,17 @@ $pretend = in_array('--pretend', $argv, true);
 
 try {
     $pdo = connectForMigrations();
-    ensureMigrationsTable($pdo);
+    $pdo->exec("SET time_zone = '+00:00'");
 
-    $appliedMigrations = appliedMigrations($pdo);
-    $migrationFiles = glob($basePath . '/database/migrations/*.sql') ?: [];
-    sort($migrationFiles, SORT_NATURAL);
+    // One statement at a time, so a failure anywhere in a file is reported and the file is not recorded.
+    $applied = Migrations::apply($pdo, $basePath . '/database/migrations', static function (string $line): void {
+        fwrite(STDOUT, $line . "\n");
+    }, $pretend);
 
-    $pendingMigrations = array_values(array_filter(
-        $migrationFiles,
-        static fn (string $file): bool => !isset($appliedMigrations[basename($file)])
-    ));
-
-    if ($pendingMigrations === []) {
+    if ($applied === []) {
         fwrite(STDOUT, "No pending migrations.\n");
-        exit(0);
-    }
-
-    foreach ($pendingMigrations as $migrationFile) {
-        $migrationName = basename($migrationFile);
-
-        if ($pretend) {
-            fwrite(STDOUT, "Would apply {$migrationName}\n");
-            continue;
-        }
-
-        $sql = trim((string) file_get_contents($migrationFile));
-
-        if ($sql === '') {
-            fwrite(STDOUT, "Skipping empty migration {$migrationName}\n");
-            continue;
-        }
-
-        fwrite(STDOUT, "Applying {$migrationName}...\n");
-
-        try {
-            $pdo->exec($sql);
-
-            $statement = $pdo->prepare('INSERT INTO migrations (name) VALUES (:name)');
-            $statement->execute(['name' => $migrationName]);
-
-            fwrite(STDOUT, "Applied {$migrationName}\n");
-        } catch (\Throwable $exception) {
-            fwrite(STDERR, "Migration failed for {$migrationName}: {$exception->getMessage()}\n");
-            exit(1);
-        }
-    }
-
-    if ($pretend) {
-        fwrite(STDOUT, 'Pending migrations: ' . count($pendingMigrations) . "\n");
+    } elseif ($pretend) {
+        fwrite(STDOUT, 'Pending migrations: ' . count($applied) . "\n");
     }
 } catch (\Throwable $exception) {
     fwrite(STDERR, $exception->getMessage() . "\n");
@@ -115,27 +79,4 @@ function createPdo(string $dsn, string $user, string $pass): \PDO
         \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
         \PDO::ATTR_EMULATE_PREPARES => false,
     ]);
-}
-
-function ensureMigrationsTable(\PDO $pdo): void
-{
-    $pdo->exec(
-        'CREATE TABLE IF NOT EXISTS migrations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL UNIQUE,
-            migrated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
-    );
-}
-
-function appliedMigrations(\PDO $pdo): array
-{
-    $statement = $pdo->query('SELECT name FROM migrations');
-    $migrations = [];
-
-    foreach ($statement->fetchAll(\PDO::FETCH_COLUMN) as $migrationName) {
-        $migrations[(string) $migrationName] = true;
-    }
-
-    return $migrations;
 }

@@ -5,16 +5,23 @@ namespace Keel\App\Services;
 use Keel\Core\Database;
 use Keel\Core\Env;
 use Keel\Core\Mailer;
+use Keel\Core\RateLimiter;
 
+/** Sign-in links: single use, 15 minutes, 5 per email and 10 per IP address per 15 minutes. */
 class MagicLinkService
 {
     private const TOKEN_TYPE = 'magic_link';
     private const EXPIRY_MINUTES = 15;
     private const RATE_LIMIT_WINDOW_MINUTES = 15;
     private const RATE_LIMIT_MAX = 5;
+    private const IP_REQUESTS_MAX = 10;
 
-    public function sendLink(string $email): array
+    public function sendLink(string $email, string $ip = 'unknown'): array
     {
+        if (!RateLimiter::attempt('magic:request:ip:' . $ip, self::IP_REQUESTS_MAX, self::RATE_LIMIT_WINDOW_MINUTES)) {
+            return ['success' => false, 'message' => 'Too many requests. Please try again later.'];
+        }
+
         $user = $this->findOrCreateUser($email);
 
         if ($this->tooManyRequests($user['id'])) {
@@ -61,8 +68,13 @@ class MagicLinkService
             return ['success' => false, 'message' => 'Invalid or expired link.'];
         }
 
-        $update = Database::connection()->prepare('UPDATE auth_tokens SET used_at = NOW() WHERE id = ?');
+        // Single use, even when two requests (a mail scanner and the user, say) arrive together.
+        $update = Database::connection()->prepare('UPDATE auth_tokens SET used_at = NOW() WHERE id = ? AND used_at IS NULL');
         $update->execute([$token['id']]);
+
+        if ($update->rowCount() !== 1) {
+            return ['success' => false, 'message' => 'Invalid or expired link.'];
+        }
 
         return ['success' => true, 'user' => $user];
     }
